@@ -15,8 +15,8 @@ There is already a "Java library":http://code.google.com/p/google-diff-match-pat
 <pre><code>user=> (diff [{:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7}]
              [{:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7} {:a 1}])
 {:+ [[6 {:a 1}]], :- [0]}
-user=> (patch d *1)
-({:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7})
+user=> (patch [{:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7}] *1)
+({:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7} {:a 1})
 </code></pre>
 
 The above example also illustrates where associative diff falls short when using it on things that are sequential. Associative diff would report that everything in the above two sequences is different when in fact there is a long common subsequence.
