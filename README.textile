@@ -1,0 +1,47 @@
+h1. clj-diff
+
+Sequential Diff for Clojure.
+
+h2. Usage
+
+<pre><code>user=> (diff "abcabba" "cbabac")
+{:+ [[2 \b] [6 \c]], :- [0 1 5]}
+user=> (patch "abcabba" *1)
+(\c \b \a \b \a \c)
+</pre></code>
+
+There is already a "Java library":http://code.google.com/p/google-diff-match-patch/ which does this well. Why create a Clojure version? So that we can do this:
+
+<pre><code>user=> (diff [{:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7}]
+             [{:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7} {:a 1}])
+{:+ [[6 {:a 1}]], :- [0]}
+user=> (patch d *1)
+({:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7})
+</code></pre>
+
+The above example also illustrates where associative diff falls short when using it on things that are sequential. Associative diff would report that everything in the above two sequences is different when in fact there is a long common subsequence.
+
+h2. Notes
+
+I plan to try various algorithms to find one that works well with Clojure's persistent data structures and can benefit from parallel computation.
+
+The current algorithm is based on the unrefined algorithm in "An O(ND) Difference Algorithm and Its Variations" by Eugene W. Myers. This algorithm can be improved with the refinements described in that paper. One of the refinements uses a recursive algorithm which may allow for a parallel "divide and conquer" approach. This will be the baseline for comparison with future algorithms.
+
+Before reading the source code for this algorithm, familiarize yourself with the edit graph in this paper.
+
+The algorithm from "An O(NP) Sequence Comparison Algorithm" by Wu, Manber and Myers is sequentially faster than the algorithm above but it will be interesting to see if it can be made to run in parallel and how it compares to the parallel version above.
+
+Finally I will explore various other parallel algorithms, comparing them to the work above and then finally choosing the best one.
+
+h2. References
+
+* "An O(ND) Difference Algorithm and Its Variations by Eugene W. Myers":http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.4.6927&rep=rep1&type=pdf
+* "An O(NP) Sequence Comparison Algorithm by Sun Wu, Udi Manber and Gene Myers":http://portal.acm.org/citation.cfm?id=96223
+
+Let A and B be two sequences with lengths Q and M where Q >= M. Let D be the length of the minimum edit script for A and B. In the title of the first paper above N = Q + M. In the second paper N = Q and <code>P = (1/2)D - (1/2)(Q - M)</code>.
+
+h2. License
+
+Copyright (C) 2010 Brenton Ashworth
+
+Distributed under the Eclipse Public License, the same as Clojure uses. See the file COPYING.
