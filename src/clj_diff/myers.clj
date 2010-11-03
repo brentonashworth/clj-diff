@@ -118,6 +118,20 @@
         (recur result (dec d) prev-k))
       result)))
 
+(defn- merge-additions
+  "Merge sequential additions into a single addition operation."
+  [additions]
+  (reduce (fn [a b]
+            (let [l (last a)]
+              (if (= (first l) (first b))
+                (-> a
+                    butlast
+                    vec
+                    (conj (vec (conj l (last b)))))
+                (conj a b))))
+          []
+          additions))
+
 (defn diff
   "Create an edit script that may be used to transform a into b. See doc string
   for clj-diff.core/diff."
@@ -145,13 +159,5 @@
                 optimal-path)]
     (-> script
         (dissoc :current)
-        (assoc :+ (reduce (fn [a b]
-                            (let [l (last a)]
-                              (if (= (first l) (first b))
-                                (-> a
-                                    butlast
-                                    (conj (vec (conj l (last b)))))
-                                (conj a b))))
-                          []
-                          (:+ script))))))
+        (assoc :+ (merge-additions (:+ script))))))
 

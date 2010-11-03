@@ -13,7 +13,10 @@
   For example: the diff of 'abcabba' and 'cbabac' whould generate the edit
   script below.
 
-  {:+ [[2 b] [6 c]], :- [0 1 5]}"
+  {:+ [[2 b] [6 c]], :- [0 1 5]}
+
+  An index of -1 may appear in additions and is special case which means to
+  add the elements at the beginning of the sequence."
   [a b]
   (myers/diff a b))
 
@@ -33,8 +36,10 @@
                   deletions)
         s (reduce (fn [a b]
                     (let [index (first b)]
-                      (assoc a index (conj (rest b) (get a index)))))
+                      (if (= index -1)
+                        (assoc a 0 (conj (vec (rest b)) (get a 0)))
+                        (assoc a index (conj (rest b) (get a index))))))
                   s
                   additions)]
-    (flatten (filter #(not (nil? %)) s))))
+    (filter #(not (nil? %)) (flatten s))))
 
