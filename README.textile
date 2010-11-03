@@ -1,6 +1,6 @@
 h1. clj-diff
 
-Provides <code>diff</code> and <code>patch</code> functions Clojure sequences where <code>(diff a b) -> x</code> and <code>(patch a x) -> b</code>.
+Provides <code>diff</code> and <code>patch</code> functions for Clojure sequences where <code>(diff a b) -> x</code> and <code>(patch a x) -> b</code>.
 
 h2. Usage
 
