@@ -1,6 +1,6 @@
 h1. clj-diff
 
-Sequential Diff for Clojure.
+Provides <code>diff</code> and <code>patch</code> functions Clojure sequences where <code>(diff a b) -> x</code> and <code>(patch a x) -> b</code>.
 
 h2. Usage
 
@@ -18,8 +18,6 @@ There is already a "Java library":http://code.google.com/p/google-diff-match-pat
 user=> (patch [{:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7}] *1)
 ({:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7} {:a 1})
 </code></pre>
-
-The above example also illustrates where associative diff falls short when using it on things that are sequential. Associative diff would report that everything in the above two sequences is different when in fact there is a long common subsequence.
 
 h2. Notes
 
