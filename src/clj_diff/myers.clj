@@ -102,7 +102,7 @@
   (loop [result '()
          d d
          k k]
-    (if (> d 0)
+    (if (>= d 0)
       (let [x (-> (get endpoints d)
                   (get k))
             y (- x k)

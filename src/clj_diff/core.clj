@@ -15,7 +15,7 @@
 
   {:+ [[2 b] [6 c]], :- [0 1 5]}
 
-  An index of -1 may appear in additions and is special case which means to
+  An index of -1 may appear in additions and is a special case which means to
   add the elements at the beginning of the sequence."
   [a b]
   (myers/diff a b))
