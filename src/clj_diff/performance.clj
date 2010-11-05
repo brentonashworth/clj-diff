@@ -44,7 +44,7 @@
         patched (first (seq (.patch_apply dmp patches a)))]
     (= b patched)))
 
-(def diff-fns [["Myers" myers-diff]
+(def diff-fns [["Myers Unrefined" myers-diff]
                ["Fraser" fraser-diff]])
 
 (defn time*
@@ -58,7 +58,6 @@
   ([n expr a b]
      (map (fn [_] (time* expr a b)) (range 0 n))))
 
-;; write a test for this...
 (defn mutate
   "Make n random mutations to the string s. Mutations will be randomly grouped
   into runs of 1 to g."
@@ -112,14 +111,14 @@
                         (sample n m t r)))
            n-range))))
 
-(defn visualize [title file-name gs data]
+(defn visualize [title file-name data]
   (let [d (to-dataset data)]
     (with-data d
       (doto (line-chart :mutations :mean
                         :group-by :name
                         :legend true
                         :title (str "Sequence length = " title)
-                        :x-label (str "# of Mutations in groups of 1-" gs)
+                        :x-label (str "Mutations")
                         :y-label "Time (ms)")
         view
         (save (str "charts/" file-name ".png"))))))
@@ -159,8 +158,8 @@
         d5 (perf-run-2 (range 100 3000 500) #(mutate % (* (count %) 0.5) 10))
         d6 (perf-run-2 (range 100 10000 1000) move-first-to-end 10 15)
         d7 (perf-run-2 (range 100 10000 1000) add-in-the-middle 10 15)]
-    (visualize 100 "mutations_100" 5 d1)
-    (visualize 1000 "mutations_1000" 10 d2)
+    (visualize 100 "mutations_100" d1)
+    (visualize 1000 "mutations_1000" d2)
     (visualize-2 "5% change" "length_5" d3)
     (visualize-2 "10% change" "length_10" d4)
     (visualize-2 "50% change" "length_50" d5)

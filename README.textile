@@ -40,9 +40,9 @@ Let A and B be two sequences with lengths Q and M where Q >= M. Let D be the len
 
 h2. Performance
 
-Having a working diff is easy. The hard part is to make it perform well. The <code>clj-diff.performace</code> namespace contains performance tests which generate the charts below. The "Fraser algorithm":http://code.google.com/p/google-diff-match-patch/ is a good Java implementation of diff and is being used here for comparison. The main goal is to find an algorithm that performs as well as, or better than, this. As you can see, there is a lot of work to do.
+The <code>clj-diff.performace</code> namespace contains performance tests which generate the charts below. The "Fraser algorithm":http://code.google.com/p/google-diff-match-patch/ is a good Java implementation of diff and is being used here for comparison. The main goal is to find an algorithm that performs as well as, or better than, this.
 
-For sequences of length 100, vary the number of mutations made to the sequence from 1 to 50. Mutations may be grouped in runs of length 1 to 5. For example, if we are going to make 5 mutations we may choose to add "a", "b", "c", "d" and "e" by making two changes adding "abc" and "de". These changes will always replace existing values so the the new sequence is the same size as the old one.
+For sequences of length 100, vary the number of mutations made to the sequence from 1 to 50. Mutations may be grouped in runs of length 1 to 5. For example, if we are going to make 5 mutations we may choose to add "a", "b", "c", "d" and "e" by making two changes adding "abc" and "de". These changes will always replace existing values so that the new sequence is the same size as the old one.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/mutations_100.png"/>
 
@@ -69,7 +69,6 @@ Move the first element the sequence to the end. Vary the size of the sequence fr
 Make a small change in the middle of the sequence. Vary the size of the sequence from 100 to 10,000.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_add_in_middle.png"/>
-
 
 h2. License
 
