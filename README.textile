@@ -38,6 +38,39 @@ h2. References
 
 Let A and B be two sequences with lengths Q and M where Q >= M. Let D be the length of the minimum edit script for A and B. In the title of the first paper above N = Q + M. In the second paper N = Q and P = (1/2)D - (1/2)(Q - M).
 
+h2. Performance
+
+Having a working diff is easy. The hard part is to make it perform well. The <code>clj-diff.performace</code> namespace contains performance tests which generate the charts below. The "Fraser algorithm":http://code.google.com/p/google-diff-match-patch/ is a good Java implementation of diff and is being used here for comparison. The main goal is to find an algorithm that performs as well as, or better than, this. As you can see, there is a lot of work to do.
+
+For sequences of length 100, vary the number of mutations made to the sequence from 1 to 50. Mutations may be grouped in runs of length 1 to 5. For example, if we are going to make 5 mutations we may choose to add "a", "b", "c", "d" and "e" by making two changes adding "abc" and "de". These changes will always replace existing values so the the new sequence is the same size as the old one.
+
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/mutations_100.png"/>
+
+For sequences of length 1000, vary the number of mutations from 1 to 500. Mutations may be grouped in runs of length 1 to 10.
+
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/mutations_1000.png"/>
+
+Vary the length of the sequences from 100 to 20,000 always changing 5% of the sequence.
+
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_5.png"/>
+
+Vary the length of the sequences from 100 to 10,000 always changing 10% of the sequence.
+
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_10.png"/>
+
+Vary the length of the sequences from 100 to 3,000 always changing 50% of the sequence.
+
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_50.png"/>
+
+Move the first element the sequence to the end. Vary the size of the sequence from 100 to 10,000.
+
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_move_first_to_end.png"/>
+
+Make a small change in the middle of the sequence. Vary the size of the sequence from 100 to 10,000.
+
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_add_in_middle.png"/>
+
+
 h2. License
 
 Copyright (C) 2010 Brenton Ashworth
