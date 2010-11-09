@@ -38,7 +38,7 @@
         y (- x k)]
     [x y]))
 
-(defn- longest-snake
+(defn snake
   "Starting at point (x, y) return the x value of the point at the end of the
   longest snake on this diagonal. A snake is a sequence of diagonal moves
   connection match points on the edit graph."
@@ -67,7 +67,7 @@
     (if (seq diagonals)
       (let [k (first diagonals)
             [x y] (next-point d k v)
-            x (longest-snake a b x y n m)
+            x (snake a b x y n m)
             y (- x k)
             v (assoc v k x)]
         (if (and (>= x n) (>= y m))
@@ -95,7 +95,7 @@
             (recur (rest d-range) endpoints)))
         [(+ n m) (- n m) endpoints]))))
 
-(defn- optimal-path
+(defn- path
   "Reconstruct the optimal path from source to sink using the information
   produced by the ses function."
   [a b d k endpoints]
@@ -109,7 +109,7 @@
             prev-v (get endpoints (dec d))
             [prev-k b] (if (< (x-down prev-v k) (x-up prev-v k))
                          [(inc k) (x-up prev-v k)]
-                         [(dec k) (+ 1 (x-down prev-v k))])
+                         [(dec k) (inc (x-down prev-v k))])
             result (reduce conj
                            (conj result [x y])
                            (reverse
@@ -132,15 +132,8 @@
           []
           additions))
 
-(defn diff
-  "Create an edit script that may be used to transform a into b. See doc string
-  for clj-diff.core/diff."
-  [a b]
-  (let [a (vec (cons nil a))
-        b (vec (cons nil b))
-        ses (ses a b)
-        optimal-path (apply optimal-path a b ses)
-        script
+(defn path->script [a b path]
+  (let [script
         (reduce (fn [e p]
                   (let [c (:current e)
                         x (first p)
@@ -156,8 +149,18 @@
                 {:current [0 0]
                  :+ []
                  :- []}
-                optimal-path)]
+                path)]
     (-> script
         (dissoc :current)
         (assoc :+ (merge-additions (:+ script))))))
+
+(defn diff
+  "Create an edit script that may be used to transform a into b. See doc string
+  for clj-diff.core/diff."
+  [a b]
+  (let [a (vec (cons nil a))
+        b (vec (cons nil b))
+        ses (ses a b)
+        optimal-path (apply path a b ses)]
+    (path->script a b optimal-path)))
 
