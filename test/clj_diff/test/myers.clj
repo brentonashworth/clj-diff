@@ -29,10 +29,10 @@
     (is (= (t 2 0 {1 2, 0 1, -1 1})
            [2 2]))))
 
-(deftest longest-snake-test
+(deftest snake-test
   (let [n (dec (count a1))
         m (dec (count b1))
-        t (fn [x y] (#'clj-diff.myers/longest-snake a1 b1 x y n m))]
+        t (fn [x y] (#'clj-diff.myers/snake a1 b1 x y n m))]
     (is (= (t 0 0) 0))
     (is (= (t 1 0) 1))
     (is (= (t 1 1) 2))
@@ -92,8 +92,8 @@
   (is (= (first (ses a2 b2))
          3)))
 
-(deftest optimal-path-test
-  (let [t #'clj-diff.myers/optimal-path]
+(deftest path-test
+  (let [t #'clj-diff.myers/path]
     (is (= (apply t a2 b2 ses-results)
            [[0 0] [1 0] [2 0] [3 1] [3 2] [4 3] [5 4]]))
     (is (= (apply t a1 b1 (ses a1 b1))
@@ -105,9 +105,11 @@
            [[0 0] [1 1] [2 1] [2 2] [3 3]]))))
 
 (deftest diff-test
+  (is (= (diff "acebdabbabed" "acbdeacbed")
+         {:+ [[4 \e] [5 \c]] :- [2 7 8 9]}))
   (is (= (diff [1 2 3 4 3 2 3 2 1 2 3] [2 3 1 2 3 4 5 4 3])
-         {:+ [[10 4 5 4 3]], :- [0 3 4 5 6 7]}))
+         {:+ [[10 4 5 4 3]] :- [0 3 4 5 6 7]}))
   (is (= (diff "abcab" "cbab")
-         {:+ [[2 \b]], :- [0 1]}))
+         {:+ [[2 \b]] :- [0 1]}))
   (is (= (diff "abcabba" "cbabac")
-         {:+ [[2 \b] [6 \c]], :- [0 1 5]})))
+         {:+ [[2 \b] [6 \c]] :- [0 1 5]})))

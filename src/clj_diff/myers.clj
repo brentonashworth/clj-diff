@@ -41,7 +41,7 @@
 (defn snake
   "Starting at point (x, y) return the x value of the point at the end of the
   longest snake on this diagonal. A snake is a sequence of diagonal moves
-  connection match points on the edit graph."
+  connecting match points on the edit graph."
   [a b x y n m]
   (loop [x x
          y y]
@@ -120,39 +120,40 @@
 
 (defn- merge-additions
   "Merge sequential additions into a single addition operation."
-  [additions]
-  (reduce (fn [a b]
-            (let [l (last a)]
-              (if (= (first l) (first b))
-                (-> a
-                    butlast
-                    vec
-                    (conj (vec (conj l (last b)))))
-                (conj a b))))
-          []
-          additions))
+  [script]
+  (assoc script :+
+    (reduce (fn [a b]
+              (let [l (last a)]
+                (if (= (first l) (first b))
+                  (-> a
+                      butlast
+                      vec
+                      (conj (vec (conj l (last b)))))
+                  (conj a b))))
+            []
+            (:+ script))))
 
-(defn path->script [a b path]
-  (let [script
-        (reduce (fn [e p]
-                  (let [c (:current e)
-                        x (first p)
-                        y (last p)
-                        delta-x (- x (first c))]
-                    (-> (cond (= delta-x (- y (last c)))
-                              e
-                              (= delta-x 1)
-                              (assoc e :- (conj (:- e) (dec x)))
-                              :else
-                              (assoc e :+ (conj (:+ e) [(dec x) (get b y)])))
-                        (assoc :current p))))
-                {:current [0 0]
-                 :+ []
-                 :- []}
-                path)]
-    (-> script
-        (dissoc :current)
-        (assoc :+ (merge-additions (:+ script))))))
+(defn path->script
+  "Convert a path though an edit graph into an edit script."
+  [b path]
+  (-> (reduce (fn [e p]
+                (let [c (:current e)
+                      x (first p)
+                      y (last p)
+                      delta-x (- x (first c))]
+                  (-> (cond (= delta-x (- y (last c)))
+                            e
+                            (= delta-x 1)
+                            (assoc e :- (conj (:- e) (dec x)))
+                            :else
+                            (assoc e :+ (conj (:+ e) [(dec x) (get b y)])))
+                      (assoc :current p))))
+              {:current [0 0]
+               :+ []
+               :- []}
+              path)
+      (dissoc :current)
+      merge-additions))
 
 (defn diff
   "Create an edit script that may be used to transform a into b. See doc string
@@ -162,5 +163,5 @@
         b (vec (cons nil b))
         ses (ses a b)
         optimal-path (apply path a b ses)]
-    (path->script a b optimal-path)))
+    (path->script b optimal-path)))
 

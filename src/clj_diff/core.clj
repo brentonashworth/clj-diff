@@ -43,3 +43,9 @@
                   additions)]
     (filter #(not (nil? %)) (flatten s))))
 
+(defn edit-distance
+  "The edit distance is the minimum number of insertions and deletions
+   required to transform one sequence into another."
+  [diff]
+  (+ (count (:- diff))
+     (reduce + (map #(count (drop 1 %)) (:+ diff)))))

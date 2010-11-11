@@ -3,6 +3,7 @@
   (:use [incanter core charts datasets])
   (:require [clj-diff [core :as core]]
             [clj-diff [myers :as myers]]
+            [clj-diff [miller :as miller]]
             [incanter [stats :as stats]])
   (:import name.fraser.neil.plaintext.diff_match_patch))
 
@@ -26,13 +27,24 @@
       (apply str v))))
 
 (defn myers-diff [a b]
-  (let [edit-script (myers/diff a b)
-        patched (apply str (core/patch a edit-script))]
+  (let [diff (myers/diff a b)
+        patched (apply str (core/patch a diff))]
     (or (= b patched)
         (do
           (println "a:" (str a))
           (println "b:" (str b))
-          (println "edit-script:" (str edit-script))
+          (println "patch:" (str diff))
+          (println "patched:" (str patched))
+          false))))
+
+(defn miller-diff [a b]
+  (let [diff (miller/diff a b)
+        patched (apply str (core/patch a diff))]
+    (or (= b patched)
+        (do
+          (println "a:" (str a))
+          (println "b:" (str b))
+          (println "patch:" (str diff))
           (println "patched:" (str patched))
           false))))
 
@@ -45,7 +57,17 @@
     (= b patched)))
 
 (def diff-fns [["Myers Unrefined" myers-diff]
+               ["Miller" miller-diff]
                ["Fraser" fraser-diff]])
+
+(defn time**
+  ([expr]
+     (let [start (. System (nanoTime))
+           ret (expr)
+           stop (. System (nanoTime))]
+       (/ (double (- stop start)) 1000000.0)))
+  ([n expr]
+     (map (fn [_] (time** expr)) (range 0 n))))
 
 (defn time*
   ([expr a b]
@@ -99,7 +121,7 @@
 (defn perf-run [n m-range g]
   (flatten
    (map (fn [m] (map #(merge {:mutations m} %)
-                     (sample n #(mutate % m g) 20 30)))
+                     (sample n #(mutate % m g) 30 50)))
         m-range)))
 
 (defn perf-run-2
@@ -120,8 +142,8 @@
                         :title (str "Sequence length = " title)
                         :x-label (str "Mutations")
                         :y-label "Time (ms)")
-        view
-        (save (str "charts/" file-name ".png"))))))
+        (view :width 700)
+        (save (str "charts/" file-name ".png") :width 700)))))
 
 (defn visualize-2 [title file-name data]
   (let [d (to-dataset data)]
@@ -132,8 +154,8 @@
                         :title title
                         :x-label "Sequence Length"
                         :y-label "Time (ms)")
-        view
-        (save (str "charts/" file-name ".png"))))))
+        (view :width 700)
+        (save (str "charts/" file-name ".png") :width 700)))))
 
 (defn test-range [size points]
   (let [mutations (/ size 2.0)
@@ -153,11 +175,14 @@
 (defn suite [x]
   (let [d1 (perf-run 100 (test-range 100 x) 5)
         d2 (perf-run 1000 (test-range 1000 x) 50)
-        d3 (perf-run-2 (range 100 20000 2000) #(mutate % (* (count %) 0.05) 10))
-        d4 (perf-run-2 (range 100 10000 1000) #(mutate % (* (count %) 0.10) 10))
-        d5 (perf-run-2 (range 100 3000 500) #(mutate % (* (count %) 0.5) 10))
-        d6 (perf-run-2 (range 100 10000 1000) move-first-to-end 10 15)
-        d7 (perf-run-2 (range 100 10000 1000) add-in-the-middle 10 15)]
+        d3 (perf-run-2 (range 100 20000 2000)
+                       #(mutate % (* (count %) 0.05) 10) 5 10)
+        d4 (perf-run-2 (range 100 10000 1000)
+                       #(mutate % (* (count %) 0.10) 10) 5 10)
+        d5 (perf-run-2 (range 100 3000 500)
+                       #(mutate % (* (count %) 0.5) 10) 5 10)
+        d6 (perf-run-2 (range 100 10000 1000) move-first-to-end 20 30)
+        d7 (perf-run-2 (range 100 10000 1000) add-in-the-middle 20 30)]
     (visualize 100 "mutations_100" d1)
     (visualize 1000 "mutations_1000" d2)
     (visualize-2 "5% change" "length_5" d3)
@@ -167,4 +192,4 @@
     (visualize-2 "Add in the Middle" "length_add_in_middle" d7)))
 
 (defn performance-tests []
-  (suite 10))
+  (suite 12))

@@ -27,14 +27,14 @@ The current algorithm is based on the unrefined algorithm in "An O(ND) Differenc
 
 Before reading the source code for this algorithm, familiarize yourself with the edit graph in this paper.
 
-The algorithm from "An O(NP) Sequence Comparison Algorithm" by Wu, Manber and Myers is sequentially faster than the algorithm above but it will be interesting to see if it can be made to run in parallel and how it compares to the parallel version above.
+The algorithm from "An O(NP) Sequence Comparison Algorithm" by Wu, Manber, Myers and Miller is sequentially faster than the algorithm above but it will be interesting to see if it can be made to run in parallel and how it compares to the parallel version above.
 
 Finally I will explore various other parallel algorithms, comparing them to the work above and then finally choosing the best one.
 
 h2. References
 
 * "An O(ND) Difference Algorithm and Its Variations by Eugene W. Myers":http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.4.6927&rep=rep1&type=pdf
-* "An O(NP) Sequence Comparison Algorithm by Sun Wu, Udi Manber and Gene Myers":http://portal.acm.org/citation.cfm?id=96223
+* "An O(NP) Sequence Comparison Algorithm by Sun Wu, Udi Manber, Gene Myers and Webb Miller":http://portal.acm.org/citation.cfm?id=96223
 
 Let A and B be two sequences with lengths Q and M where Q >= M. Let D be the length of the minimum edit script for A and B. In the title of the first paper above N = Q + M. In the second paper N = Q and P = (1/2)D - (1/2)(Q - M).
 
