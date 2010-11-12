@@ -1,6 +1,6 @@
 (ns clj-diff.test.performance
-  (:use [clj-diff.core])
-  (:use [clj-diff.performance] :reload)
+  (:use [clj-diff [core :only [diff]]])
+  (:use [clj-diff [performance :only [mutate]]])
   (:use [clojure.test]))
 
 (deftest mutate-test

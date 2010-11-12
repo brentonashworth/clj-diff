@@ -7,14 +7,63 @@
             [incanter [stats :as stats]])
   (:import name.fraser.neil.plaintext.diff_match_patch))
 
-(defn random-between [lo hi]
+;;
+;; Diff functions for performance tests.
+;;
+;; Each function will compute a diff and return it.
+;;
+
+(defn myers-diff [a b]
+  (myers/diff a b))
+
+(defn miller-diff [a b]
+  (miller/diff a b))
+
+(defn fraser-diff [a b]
+  (let [dmp (diff_match_patch.)
+        _ (set! (. dmp Diff_Timeout) 0)]
+    (.diff_main dmp a b)))
+
+(defn fraser-distance [diffs]
+  (let [diffs (map #(vector (.toString (.operation %)) (.text %)) (seq diffs))]
+    (reduce + (map #(case (first %)
+                          "EQUAL" 0
+                          (count (last %)))
+                   diffs))))
+
+(defprotocol EditDistance
+  (edit-distance [diffs]))
+
+(extend-protocol EditDistance
+  
+  clojure.lang.IPersistentMap
+  
+  (edit-distance [diffs]
+                 (core/edit-distance diffs))
+
+  java.util.LinkedList
+
+  (edit-distance [diffs]
+                 (fraser-distance diffs)))
+
+(def diff-fns [["Myers Unrefined" myers-diff]
+               ["Miller" miller-diff]
+               ["Fraser" fraser-diff]])
+
+(defn random-between
+  "Generate a random number between low and high. Can also be passed
+  characters as the bounds."
+  [lo hi]
   (let [r (java.util.Random.)
         lo (if (char? lo) (int lo) lo)
         hi (if (char? hi) (int hi) hi)
         n (+ 1 (- hi lo))]
     (+ lo (Math/abs (mod (. r nextInt) n)))))
 
-(defn random-string [size]
+(defn random-string
+  "Generage a random string composed of upper and lower case letters as the
+  numbers 0 through 9."
+  [size]
   (loop [length (random-between size size)
          v []]
     (if (> length 0)
@@ -23,62 +72,8 @@
                (conj v
                      (cond (= j 1) (char (random-between \a \z))
                            (= j 2) (char (random-between \A \Z))
-                           (= j 3) (char (random-between \1 \9))))))
+                           (= j 3) (char (random-between \0 \9))))))
       (apply str v))))
-
-(defn myers-diff [a b]
-  (let [diff (myers/diff a b)
-        patched (apply str (core/patch a diff))]
-    (or (= b patched)
-        (do
-          (println "a:" (str a))
-          (println "b:" (str b))
-          (println "patch:" (str diff))
-          (println "patched:" (str patched))
-          false))))
-
-(defn miller-diff [a b]
-  (let [diff (miller/diff a b)
-        patched (apply str (core/patch a diff))]
-    (or (= b patched)
-        (do
-          (println "a:" (str a))
-          (println "b:" (str b))
-          (println "patch:" (str diff))
-          (println "patched:" (str patched))
-          false))))
-
-(defn fraser-diff [a b]
-  (let [dmp (diff_match_patch.)
-        _ (set! (. dmp Diff_Timeout) 0)
-        diffs (.diff_main dmp a b)
-        patches (.patch_make dmp diffs)
-        patched (first (seq (.patch_apply dmp patches a)))]
-    (= b patched)))
-
-(def diff-fns [["Myers Unrefined" myers-diff]
-               ["Miller" miller-diff]
-               ["Fraser" fraser-diff]])
-
-(defn time**
-  ([expr]
-     (let [start (. System (nanoTime))
-           ret (expr)
-           stop (. System (nanoTime))]
-       (/ (double (- stop start)) 1000000.0)))
-  ([n expr]
-     (map (fn [_] (time** expr)) (range 0 n))))
-
-(defn time*
-  ([expr a b]
-     (let [a (a)
-           b (b a)
-           start (. System (nanoTime))
-           ret (expr a b)
-           stop (. System (nanoTime))]
-       (/ (double (- stop start)) 1000000.0)))
-  ([n expr a b]
-     (map (fn [_] (time* expr a b)) (range 0 n))))
 
 (defn mutate
   "Make n random mutations to the string s. Mutations will be randomly grouped
@@ -104,37 +99,61 @@
                          (flatten indecies)
                          (flatten additions)))))))
 
+(defn time*
+  "Calculate the time, in milliseconds, to run the passed expression. Returns
+  a sequence of maps containing the times and return values of each run."
+  ([expr]
+     (time* 1 expr identity))
+  ([n expr]
+     (time* n expr identity))
+  ([n expr f]
+     (map (fn [_] (let [start (. System (nanoTime))
+                        ret (expr)
+                        stop (. System (nanoTime))]
+                    {:time (/ (double (- stop start)) 1000000.0)
+                     :result (f ret)}))
+          (range 0 n))))
+
 (defn sample
-  "n is the size of the initial string. m is the number of mutations and g is
-  the mutation group size."
-  [n mutate r t]
-  (let [a #(random-string n)
-        b #(mutate %)]
-    (map #(let [[alg f] %
-                d (take t (sort (time* r f a b)))
-                mean (stats/mean d)
-                sd (stats/sd d)]
-            (println "size:" n ", alg: " alg ", mean:" mean ", sd:" sd) 
-            {:name alg :mean mean :sd sd})
-         diff-fns)))
+  "For strings a and b, run each diff algorithm 'total-runs' times and then
+  calculate stats based on the fastest 'take-top' runs."
+  [a b take-top total-runs]
+  (map #(let [[alg f] %
+              d (take take-top
+                      (sort-by :time (time* total-runs
+                                            (fn [] (f a b))
+                                            edit-distance)))
+              times (map :time d)
+              distances (distinct (map :result d))
+              mean (stats/mean times)
+              sd (stats/sd times)]
+          {:name alg :mean mean :sd sd
+           :distance (apply str (interpose ", " distances))})
+       diff-fns))
 
-(defn perf-run [n m-range g]
-  (flatten
-   (map (fn [m] (map #(merge {:mutations m} %)
-                     (sample n #(mutate % m g) 30 50)))
-        m-range)))
+(defn vary-mutations
+  "For a sting on length n, vary the number of mutations that are made to
+  the string."
+  [n m-range g]
+  (let [a (random-string n)]
+    (flatten
+     (map (fn [m] (map #(merge {:mutations m} %)
+                       (sample a (mutate a m g) 30 50)))
+          m-range))))
 
-(defn perf-run-2
+(defn vary-string-length
   ([n-range m]
-     (perf-run-2 n-range m 2 3))
+     (vary-string-length n-range m 2 3))
   ([n-range m t r]
      (flatten
       (map (fn [n] (map #(merge {:size n} %)
-                        (sample n m t r)))
+                        (let [a (random-string n)]
+                          (sample a (m a) t r))))
            n-range))))
 
 (defn visualize [title file-name data]
-  (let [d (to-dataset data)]
+  (let [d (to-dataset (doall data))]
+    (view d)
     (with-data d
       (doto (line-chart :mutations :mean
                         :group-by :name
@@ -146,7 +165,8 @@
         (save (str "charts/" file-name ".png") :width 700)))))
 
 (defn visualize-2 [title file-name data]
-  (let [d (to-dataset data)]
+  (let [d (to-dataset (doall data))]
+    (view d)
     (with-data d
       (doto (line-chart :size :mean
                         :group-by :name
@@ -154,6 +174,7 @@
                         :title title
                         :x-label "Sequence Length"
                         :y-label "Time (ms)")
+        
         (view :width 700)
         (save (str "charts/" file-name ".png") :width 700)))))
 
@@ -173,16 +194,16 @@
     (str (first split) "clj-diff" (last split))))
 
 (defn suite [x]
-  (let [d1 (perf-run 100 (test-range 100 x) 5)
-        d2 (perf-run 1000 (test-range 1000 x) 50)
-        d3 (perf-run-2 (range 100 20000 2000)
+  (let [d1 (vary-mutations 100 (test-range 100 x) 5)
+        d2 (vary-mutations 1000 (test-range 1000 x) 50)
+        d3 (vary-string-length (range 100 20000 2000)
                        #(mutate % (* (count %) 0.05) 10) 5 10)
-        d4 (perf-run-2 (range 100 10000 1000)
+        d4 (vary-string-length (range 100 10000 1000)
                        #(mutate % (* (count %) 0.10) 10) 5 10)
-        d5 (perf-run-2 (range 100 3000 500)
+        d5 (vary-string-length (range 100 3000 500)
                        #(mutate % (* (count %) 0.5) 10) 5 10)
-        d6 (perf-run-2 (range 100 10000 1000) move-first-to-end 20 30)
-        d7 (perf-run-2 (range 100 10000 1000) add-in-the-middle 20 30)]
+        d6 (vary-string-length (range 100 10000 1000) move-first-to-end 20 30)
+        d7 (vary-string-length (range 100 10000 1000) add-in-the-middle 20 30)]
     (visualize 100 "mutations_100" d1)
     (visualize 1000 "mutations_1000" d2)
     (visualize-2 "5% change" "length_5" d3)
@@ -192,4 +213,4 @@
     (visualize-2 "Add in the Middle" "length_add_in_middle" d7)))
 
 (defn performance-tests []
-  (suite 12))
+  (suite 10))

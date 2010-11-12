@@ -1,43 +1,62 @@
 (ns clj-diff.test.compare
-  (:use [clj-diff.core]
-        [clj-diff.performance])
+  (:use [clj-diff [performance :only [random-string
+                                      random-between
+                                      fraser-distance
+                                      fraser-diff
+                                      mutate
+                                      edit-distance]]])
   (:use [clojure.test])
-  (:require [clj-diff [myers :as myers]]
+  (:require [clj-diff [core :as core]]
+            [clj-diff [myers :as myers]]
             [clj-diff [miller :as miller]])
   (:import name.fraser.neil.plaintext.diff_match_patch))
 
-(defn fraser-distance [a b]
-  (let [dmp (diff_match_patch.)
-        _ (set! (. dmp Diff_Timeout) 0)
-        diffs (.diff_main dmp a b)
-        diffs (map #(vector (.toString (.operation %)) (.text %)) (seq diffs))]
-    (reduce + (map #(case (first %)
-                          "EQUAL" 0
-                          (count (last %)))
-                   diffs))))
-
 (deftest fraser-distance-test
-  (is (= (fraser-distance "aba" "aca")
+  (is (= (fraser-distance (fraser-diff "aba" "aca"))
          2))
-  (is (= (fraser-distance "abcabba" "cbabac")
+  (is (= (fraser-distance (fraser-diff "abcabba" "cbabac"))
          5))
-  (is (= (fraser-distance "nBP8GaFHVls2dI8h9aK1FWdRgevf43"
-                          "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v")
+  (is (= (fraser-distance (fraser-diff "nBP8GaFHVls2dI8h9aK1FWdRgevf43"
+                                       "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v"))
          46)))
+
+(defn random-diff->patch-test [f]
+  (dotimes [_ 100]
+    (let [a (random-string (random-between 100 1000))
+          mutations (random-between 10 (quot (count a) 2))
+          groups (random-between 1 (quot mutations 2))
+          b (mutate a mutations groups)
+          diff (f a b)
+          patched (apply str (core/patch a diff))]
+      (when (not (= patched b))
+        (do (println "----------")
+            (println "a:" (str a))
+            (println "b:" (str b))
+            (println "diff:" diff)
+            (println "patched:" patched)))
+      (is (= patched b)))))
+
+;; Generate random strings of different sizes and amounts of mutation
+;; and ensure tha the produced diff works as a patch.
+(deftest correct-diff-myers-test
+  (random-diff->patch-test myers/diff))
+
+(deftest correct-diff-miller-test
+  (random-diff->patch-test miller/diff))
 
 ;; In some curcumstances, the edit distance is slightly higher for
 ;; myers and miller than it is for fraser. Use the output of these
 ;; errors to track down the problem.
-#_(deftest same-edit-distance
+(deftest same-edit-distance
   (dotimes [_ 100]
-    (let [a (random-string (random-between 20 80))
+    (let [a (random-string (random-between 20 60))
           size (count a)
           mutations (random-between 10 (quot size 2))
           groups (random-between 1 (quot mutations 2))
           b (mutate a mutations groups)
           myers-dist (edit-distance (myers/diff a b))
           miller-dist (edit-distance (miller/diff a b))
-          fraser-dist (fraser-distance a b)]
+          fraser-dist (edit-distance (fraser-diff a b))]
       (when (not (= fraser-dist miller-dist myers-dist))
         (do (println "a:" (str a))
             (println "b:" (str b))

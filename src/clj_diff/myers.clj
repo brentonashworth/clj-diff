@@ -6,7 +6,8 @@
 
    For two sequences a and b, a is on the x axis and b is on the y axis of
    the edit graph. n and m are the lengths of a and b respectively. Diagonal
-   k is the diagonal where k = x - y for all points (x, y) on the diagonal.")
+   k is the diagonal where k = x - y for all points (x, y) on the diagonal."
+  (:require [clj-diff [optimisations :as opt]]))
 
 (defn- x-down
   "Get the x value of the furthest reaching d-path on the diagonal below k."
@@ -159,9 +160,10 @@
   "Create an edit script that may be used to transform a into b. See doc string
   for clj-diff.core/diff."
   [a b]
-  (let [a (vec (cons nil a))
-        b (vec (cons nil b))
-        ses (ses a b)
-        optimal-path (apply path a b ses)]
-    (path->script b optimal-path)))
+  (opt/diff a b
+            (fn [a b] (let [a (vec (cons nil a))
+                            b (vec (cons nil b))
+                            ses (ses a b)
+                            optimal-path (apply path a b ses)]
+                        (path->script b optimal-path)))))
 
