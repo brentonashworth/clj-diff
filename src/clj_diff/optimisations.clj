@@ -7,23 +7,52 @@
 ;; Use protocols to provide different implementations for strings and
 ;; sequences.
 
-(defn common-prefix [a b]
-  (let [a (seq a)
-        b (seq b)]
-    (let [common (count (take-while true? (map #(= %1 %2) a b)))
-          a (drop common a)
-          b (drop common b)]
-      [common a b])))
+(defprotocol Common
+  (common-prefix [a b])
+  (common-suffix [a b]))
 
-(defn common-suffix [a b]
-  (let [a (vec (seq a))
-        b (vec (seq b))]
-    (let [common (count (take-while true? (map #(= %1 %2)
-                                               (rseq a)
-                                               (rseq b))))
-          a (take (inc (- (count a) common)) a)
-          b (take (inc (- (count b) common)) b)]
-      [common a b])))
+(extend-protocol Common
+
+  clojure.lang.Sequential
+  (common-prefix [a b]
+                 (let [a (seq a)
+                       b (seq b)
+                       common (count (take-while true? (map #(= %1 %2) a b)))]
+                   [common (drop common a) (drop common b)]))
+  (common-suffix [a b]
+                 (let [a (vec (seq a))
+                       b (vec (seq b))
+                       common (count (take-while true? (map #(= %1 %2)
+                                                            (rseq a)
+                                                            (rseq b))))]
+                   [common
+                    (take (- (count a) common) a)
+                    (take (- (count b) common) b)]))
+
+  java.lang.String
+  (common-prefix [^String a ^String b]
+                 (let [n (Math/min (.length a) (.length b))
+                       i (loop [i 0]
+                           (if (< i n)
+                             (if (not= (.charAt a i) (.charAt b i))
+                               i
+                               (recur (inc i)))
+                             n))]
+                   [i (.substring a i) (.substring b i)]))
+  (common-suffix [^String a ^String b]
+                 (let [a-length (.length a)
+                       b-length (.length b)
+                       n (Math/min a-length b-length)
+                       i (loop [i 1]
+                           (if (<= i n)
+                             (if (not= (.charAt a (- a-length i))
+                                       (.charAt b (- b-length i)))
+                               (dec i)
+                               (recur (inc i)))
+                             n))]
+                   [i
+                    (.substring a 0 (- a-length i))
+                    (.substring b 0 (- b-length i))])))
 
 (defn shortcut [a b]
   (cond (or (nil? a) (nil? b))
@@ -35,15 +64,27 @@
                          :- (vec (range 0 (count a)))}
         :else nil))
 
+(defn- diff* [a b f]
+  (or (cond (= (count a) 0) {:+ [(vec (concat [-1] (seq b)))]
+                             :- []}
+            (= (count b) 0) {:+ []
+                             :- (vec (range 0 (count a)))}
+            :else nil)
+      (f a b)))
+
 (defn diff
   "Wrap the diff function f in pre and post optimisations."
   [a b f]
-  (or (shortcut a b)
-      (let [[prefix a b] (common-prefix a b)
-            [suffix a b] (common-suffix a b)
-            diffs (f a b)]
-        (if (> prefix 0)
-          {:+ (vec (map #(apply vector
-                                (+ prefix (first %)) (rest %)) (:+ diffs)))
-           :- (vec (map #(+ prefix %) (:- diffs)))}
-          diffs))))
+  (let [diffs (cond (or (nil? a) (nil? b))
+                    (throw (IllegalArgumentException. "Cannot diff nil."))
+                    (= a b) {:+ [] :- []}
+                    :else nil)]
+    (or diffs
+        (let [[prefix a b] (common-prefix a b)
+              [suffix a b] (common-suffix a b)
+              diffs (diff* a b f)]
+          (if (> prefix 0)
+            {:+ (vec (map #(apply vector
+                                  (+ prefix (first %)) (rest %)) (:+ diffs)))
+             :- (vec (map #(+ prefix %) (:- diffs)))}
+            diffs)))))
