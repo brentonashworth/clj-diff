@@ -134,12 +134,14 @@
 (defn vary-mutations
   "For a sting on length n, vary the number of mutations that are made to
   the string."
-  [n m-range g]
-  (let [a (random-string n)]
-    (flatten
-     (map (fn [m] (map #(merge {:mutations m} %)
-                       (sample a (mutate a m g) 30 50)))
-          m-range))))
+  ([n m-range g]
+     (vary-mutations n m-range g 2 3))
+  ([n m-range g t r]
+     (let [a (random-string n)]
+       (flatten
+        (map (fn [m] (map #(merge {:mutations m} %)
+                          (sample a (mutate a m g) t r)))
+             m-range)))))
 
 (defn vary-string-length
   ([n-range m]
@@ -193,24 +195,38 @@
   (let [split (map #(apply str %) (split-at (/ (count a) 2) (seq a)))]
     (str (first split) "clj-diff" (last split))))
 
+(defn perf-vary-mut-100 [x n]
+  (let [d (vary-mutations 100 (test-range 100 x) 5 (quot (* n 2) 3) n)]
+    (visualize 100 "mutations_100" d)))
+
+(defn perf-vary-mut-1000 [x n]
+  (let [d (vary-mutations 1000 (test-range 1000 x) 50 (quot (* n 2) 3) n)]
+    (visualize 1000 "mutations_1000" d)))
+
+(defn perf-move-first-to-end [x n]
+  (let [d (vary-string-length (range 100 10000 1000)
+                              move-first-to-end
+                              (quot (* n 2) 3)
+                              n)]
+    (visualize-2 "Move First Element to End" "length_move_first_to_end" d)))
+
+(defn perf-add-in-the-middle [x n]
+  (let [d (vary-string-length (range 100 10000 1000)
+                              add-in-the-middle
+                              (quot (* n 2) 3)
+                              n)]
+    (visualize-2 "Add in the Middle" "length_add_in_middle" d)))
+
 (defn suite [x]
-  (let [d1 (vary-mutations 100 (test-range 100 x) 5)
-        d2 (vary-mutations 1000 (test-range 1000 x) 50)
-        d3 (vary-string-length (range 100 20000 2000)
-                       #(mutate % (* (count %) 0.05) 10) 5 10)
+  (let [d3 (vary-string-length (range 100 20000 2000)
+                               #(mutate % (* (count %) 0.05) 10) 5 10)
         d4 (vary-string-length (range 100 10000 1000)
-                       #(mutate % (* (count %) 0.10) 10) 5 10)
+                               #(mutate % (* (count %) 0.10) 10) 5 10)
         d5 (vary-string-length (range 100 3000 500)
-                       #(mutate % (* (count %) 0.5) 10) 5 10)
-        d6 (vary-string-length (range 100 10000 1000) move-first-to-end 20 30)
-        d7 (vary-string-length (range 100 10000 1000) add-in-the-middle 20 30)]
-    (visualize 100 "mutations_100" d1)
-    (visualize 1000 "mutations_1000" d2)
+                               #(mutate % (* (count %) 0.5) 10) 5 10)]
     (visualize-2 "5% change" "length_5" d3)
     (visualize-2 "10% change" "length_10" d4)
-    (visualize-2 "50% change" "length_50" d5)
-    (visualize-2 "Move First Element to End" "length_move_first_to_end" d6)
-    (visualize-2 "Add in the Middle" "length_add_in_middle" d7)))
+    (visualize-2 "50% change" "length_50" d5)))
 
 (defn performance-tests []
   (suite 10))

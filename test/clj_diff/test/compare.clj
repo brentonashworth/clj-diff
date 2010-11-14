@@ -47,7 +47,7 @@
 ;; In some circumstances, the edit distance is slightly higher for
 ;; myers and miller than it is for fraser. Use the output of these
 ;; errors to track down the problem.
-#_(deftest same-edit-distance
+(deftest same-edit-distance
   (dotimes [_ 100]
     (let [a (random-string (random-between 10 20))
           size (count a)

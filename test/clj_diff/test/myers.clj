@@ -1,5 +1,6 @@
 (ns clj-diff.test.myers
-  (:use [clj-diff.myers] :reload)
+  (:use [clj-diff.myers] :reload
+        [clj-diff [core :only (edit-distance patch)]])
   (:use [clojure.test]))
 
 (def a1 (vec (cons nil "abcabba")))
@@ -105,11 +106,24 @@
            [[0 0] [1 1] [2 1] [2 2] [3 3]]))))
 
 (deftest diff-test
-  (is (= (diff "acebdabbabed" "acbdeacbed")
-         {:+ [[4 \e] [5 \c]] :- [2 7 8 9]}))
-  (is (= (diff [1 2 3 4 3 2 3 2 1 2 3] [2 3 1 2 3 4 5 4 3])
-         {:+ [[10 4 5 4 3]] :- [0 3 4 5 6 7]}))
-  (is (= (diff "abcab" "cbab")
-         {:+ [[2 \b]] :- [0 1]}))
-  (is (= (diff "abcabba" "cbabac")
-         {:+ [[2 \b] [6 \c]] :- [0 1 5]})))
+  (let [t (fn [a b] (edit-distance (diff a b)))]
+    (is (= (t "acebdabbabed" "acbdeacbed")
+           6))
+    (is (= (t [1 2 3 4 3 2 3 2 1 2 3] [2 3 1 2 3 4 5 4 3])
+           10))
+    (is (= (t "abcab" "cbab")
+           3))
+    (is (= (t "abcabba" "cbabac")
+           5))))
+
+(deftest roundtrip
+  (are [a b]
+       (= b (apply str (patch a (diff a b))))
+       
+       "aba" "aca"
+       "abcabba" "cbabac"
+       "acebdabbabed" "acbdeacbed"
+       "FWdRgevf43" "T5C7U3Lz5v"
+       "s2dI8h9aK1FWdRgevf43" "5hs8L9T3K2T5C7U3Lz5v"
+       "nBP8GaFHVls2dI8h9aK1FWdRgevf43" "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v"
+       "aba" "aca"))
