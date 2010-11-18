@@ -61,7 +61,7 @@
     (+ lo (Math/abs (mod (. r nextInt) n)))))
 
 (defn random-string
-  "Generage a random string composed of upper and lower case letters as the
+  "Generage a random string composed of upper and lower case letters and the
   numbers 0 through 9."
   [size]
   (loop [length (random-between size size)
@@ -140,7 +140,7 @@
      (let [a (random-string n)]
        (flatten
         (map (fn [m] (map #(merge {:mutations m} %)
-                          (sample a (mutate a m g) t r)))
+                          (sample a (mutate a m g) (max t 1) (max r 1))))
              m-range)))))
 
 (defn vary-string-length
@@ -150,7 +150,7 @@
      (flatten
       (map (fn [n] (map #(merge {:size n} %)
                         (let [a (random-string n)]
-                          (sample a (m a) t r))))
+                          (sample a (m a) (max t 1) (max r 1)))))
            n-range))))
 
 (defn visualize [title file-name data]
@@ -181,52 +181,66 @@
         (save (str "charts/" file-name ".png") :width 700)))))
 
 (defn test-range [size points]
-  (let [mutations (/ size 2.0)
-        step (/ mutations points)]
+  (let [mutations (quot size 2)
+        step (quot mutations points)]
     (range 1 (inc mutations) step)))
 
-(defn move-first-to-end [a]
+(defn- move-first-to-end* [a]
   (let [s (seq a)
         f (first s)
         s (drop 1 s)]
     (apply str (concat (vec s) [f]))))
 
-(defn add-in-the-middle [a]
+(defn- add-in-the-middle* [a]
   (let [split (map #(apply str %) (split-at (/ (count a) 2) (seq a)))]
     (str (first split) "clj-diff" (last split))))
 
-(defn perf-vary-mut-100 [x n]
-  (let [d (vary-mutations 100 (test-range 100 x) 5 (quot (* n 2) 3) n)]
+(defn vary-mutation-100 [x n]
+  (let [d (vary-mutations 100 (test-range 100 x)
+                          5
+                          (quot (* n 2) 3)
+                          n)]
     (visualize 100 "mutations_100" d)))
 
-(defn perf-vary-mut-1000 [x n]
-  (let [d (vary-mutations 1000 (test-range 1000 x) 50 (quot (* n 2) 3) n)]
+(defn vary-mutation-1000 [x n]
+  (let [d (vary-mutations 1000 (test-range 1000 x)
+                          50
+                          (quot (* n 2) 3) n)]
     (visualize 1000 "mutations_1000" d)))
 
-(defn perf-move-first-to-end [x n]
-  (let [d (vary-string-length (range 100 10000 1000)
-                              move-first-to-end
+(defn move-first-to-end [x n]
+  (let [d (vary-string-length (range 100 10000 (quot 10000 x))
+                              move-first-to-end*
                               (quot (* n 2) 3)
                               n)]
     (visualize-2 "Move First Element to End" "length_move_first_to_end" d)))
 
-(defn perf-add-in-the-middle [x n]
-  (let [d (vary-string-length (range 100 10000 1000)
-                              add-in-the-middle
+(defn add-in-the-middle [x n]
+  (let [d (vary-string-length (range 100 10000 (quot 10000 x))
+                              add-in-the-middle*
                               (quot (* n 2) 3)
                               n)]
     (visualize-2 "Add in the Middle" "length_add_in_middle" d)))
 
+(defn percent-change [p x n]
+  (let [maximum 20000
+        percent (/ p 100.0)
+        maximum (- maximum (* maximum percent 1.7))
+        d (vary-string-length (range 100 maximum (quot maximum x))
+                              #(mutate % (* (count %) percent) 10)
+                              (quot (* n 2) 3)
+                              n)]
+    (visualize-2 (str p "% change") (str "length_" p) d)))
+
 (defn suite [x]
-  (let [d3 (vary-string-length (range 100 20000 2000)
-                               #(mutate % (* (count %) 0.05) 10) 5 10)
-        d4 (vary-string-length (range 100 10000 1000)
-                               #(mutate % (* (count %) 0.10) 10) 5 10)
-        d5 (vary-string-length (range 100 3000 500)
-                               #(mutate % (* (count %) 0.5) 10) 5 10)]
-    (visualize-2 "5% change" "length_5" d3)
-    (visualize-2 "10% change" "length_10" d4)
-    (visualize-2 "50% change" "length_50" d5)))
+  (do
+    (vary-mutation-100 x 50)
+    (vary-mutation-1000 x 10)
+    (percent-change 5 x 3)
+    (percent-change 10 x 3)
+    (percent-change 50 x 3)
+    (move-first-to-end x 50)
+    (add-in-the-middle x 50)))
 
 (defn performance-tests []
   (suite 10))

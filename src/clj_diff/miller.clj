@@ -3,6 +3,7 @@
    Sun Wu, Udi Manber, Gene Myers and Web Miller.
 
    Please refer to the above paper while reading this code."
+  (:require [clj-diff [optimisations :as opt]])
   (:require [clj-diff [myers :as myers]]))
 
 (defn- next-x
@@ -32,7 +33,7 @@
             (assoc fp next-k (snake a b n m next-k fp)))
           fp
           (concat (range (* -1 p) delta)
-                  (reverse (range (inc delta) (+ delta p)))
+                  (reverse (range (inc delta) (+ delta (inc p))))
                   [delta])))
 
 (defn ses
@@ -55,85 +56,116 @@
                (assoc fp p
                       (search-p-band a b n m delta p (get fp (dec p) {}))))))))
 
-(defn- dec-p
-  "The p-map maps diagonals to the current p value that should be used to
-  find the farthest x value for this diagonal. Use of this map allows us to
-  treat fp as a set of stacks, one for each diagonal. This function is called
-  when you want to pop something off of k's stack."
-  [p-map k]
-  (let [p (get p-map k -1)]
-    (if (>= p 0)
-      (assoc p-map k (dec p))
-      p-map)))
+(defn- edit-dist [delta p k]
+  (if (> k delta)
+    (+ (* 2 (- p (- k delta))) k)
+    (+ (* 2 p) k)))
 
-(defn- farthest-x-on-k
-  "Get the current farthers x value of diagonal k."
-  [fp p-map k]
-  (let [p (get p-map k)
-        fp (get fp p {})]
-    (get fp k -1)))
+(defn- p-value-up [delta p k]
+  (if (> (inc k) delta) p (dec p)))
 
-(defn- x-up
-  "Get the farthest x on the diagonal above diagonal k. This value must be <=
-  x."
-  [fp k x p-map]
-  (loop [p-map p-map]
-    (let [k* (inc k)
-          x* (farthest-x-on-k fp p-map k*)]
-      (if (<= x* x)
-        [x* p-map]
-        (recur (dec-p p-map k*))))))
+(defn- p-value-left [delta p k]
+  (if (< (dec k) delta) p (dec p)))
 
-(defn- x-down
-  "Get the farthest x on the diagonal below diagonal k. This value must be <
-  x."
-  [fp k x p-map]
-  (loop [p-map p-map]
-    (let [k* (dec k)
-          x* (farthest-x-on-k fp p-map k*)]
-      (if (< x* x)
-        [x* p-map]
-        (recur (dec-p p-map k*))))))
+(defn- look-up [graph delta p x k]
+  (when (> (- x k) 0)
+    (let [up-k (inc k)
+          up-p (p-value-up delta p k)
+          x* (-> graph
+                 (get up-p {})
+                 (get up-k -1))]
+      (when (and (>= x* 0) (= x x*))
+        {:edit :insert
+         :x x*
+         :p up-p
+         :k up-k
+         :d (edit-dist delta up-p up-k)}))))
 
-(defn- path
-  "Reconstruct the optimal path from source to sink using the information
-  produced by the ses function."
-  [a b p delta fp]
-  (loop [result '()
-         p-map (zipmap (keys (get fp p)) (repeat p))
-         k delta]
-    (if (= (first result) [0 0])
-      result
-      (let [x (farthest-x-on-k fp p-map k)
-            p-map (dec-p p-map k)
-            y (- x k)
-            [up p-map] (x-up fp k x p-map)
-            [down p-map] (x-down fp k x p-map)
-            [prev-k b] (if (< down up)
-                         [(inc k) up]
-                         [(dec k) (inc down)])
-            result (reduce conj
-                           (conj result [x y])
-                           (reverse
-                            (map #(vector % (- % k))
-                                 (range b x))))]
-        (recur result p-map prev-k)))))
+(defn- look-left [graph delta p x k]
+  (when (> x 0)
+    (let [left-k (dec k)
+          left-p (p-value-left delta p k)
+          x* (-> graph
+                 (get left-p {})
+                 (get left-k -1))]
+      (when (and (>= x* 0) (= (dec x) x*))
+        {:edit :delete
+         :x x*
+         :p left-p
+         :k left-k
+         :d (edit-dist delta left-p left-k)}))))
+
+(defn- backtrack-snake
+  "Find the x value of the start of the longest snake ending at (x, y)."
+  [a b x y]
+  {:pre [(and (>= x 0) (>= y 0))]}
+  (loop [x x
+         y y]
+    (if (or (= x y 0) (not (= (get a x) (get b y))))
+      x
+      (recur (dec x) (dec y)))))
+
+(defn- next-edit
+  "Return the next move through the edit graph which will decrease the
+  edit distance by 1."
+  [a b graph delta p x k]
+  {:post [(= (dec (edit-dist delta p k)) (:d %))]}
+  (let [d (edit-dist delta p k)
+        head-x (backtrack-snake a b x (- x k))]
+    (loop [head-x head-x]
+      (let [up (look-up graph delta p head-x k)
+            left (look-left graph delta p head-x k)
+            move (first (filter #(and (not (nil? %))
+                                      (= (:d %) (dec d)))
+                                [left up]))]
+        (if (and (< head-x x) (nil? move))
+          (recur (inc head-x))
+          move)))))
+
+(defn- edits
+  "Return a sequence of edits. Each edit represents two points on the graph, a
+  from and to point."
+  [a b p delta graph]
+  (let [next-fn (partial next-edit a b graph delta)]
+    (loop [edits '()
+           prev {:x (count a) :p p :k delta
+                 :d (edit-dist delta p delta)}]
+      (if (= (:d prev) 0)
+        edits
+        (let [next (next-fn (:p prev) (:x prev) (:k prev))]
+          (recur (conj edits next) next))))))
 
 (defn- diff*
   "Calculate the optimal path using the miller algorithm. This algorithm
   requires that a >= b."
   [a b]
   {:pre [(>= (count a) (count b))]}
-  (let [ses (ses a b)
-        optimal-path (apply path a b ses)]
-    optimal-path))
+  (apply edits a b (ses a b)))
 
 (defn- transpose
-  "Transpose the edit script by reversing each pair of x and y values. If the
-  path represents the edit path to transform a -> b then transposition will
-  result in the edit path to transform b -> a."
-  [path]
-  (map #(vec (reverse %)) path))
+  [edit]
+  (-> edit
+      (assoc :edit (if (= :insert (:edit edit)) :delete :insert))
+      (assoc :x (- (:x edit) (:k edit)))
+      (assoc :k (- (:k edit)))))
+
+(defn- edits->script
+  [b edits f]
+  (reduce (fn [script edit]
+            (let [{:keys [edit x k]} (f edit)
+                  y (inc (- x k))
+                  insertions (:+ script)
+                  last-insert (last insertions)]
+              (if (= edit :delete)
+                (assoc script :- (conj (:- script) x))
+                (assoc script :+ (let [index (dec x)]
+                                   (if (= index (first last-insert))
+                                     (conj (vec (butlast insertions))
+                                           (conj last-insert (get b y)))
+                                     (conj insertions [(dec x) (get b y)])))))))
+          {:+ []
+           :- []}
+          edits))
 
 (defn diff
   "Create an edit script that may be used to transform a into b. See doc string
@@ -141,11 +173,10 @@
   arguments a and b where a >= b. If the passed values of a and b need to be
   swapped then the resulting path with will transposed."
   [a b]
-  (let [a (vec (cons nil a))
-        b (vec (cons nil b))
-        [a* b*] (if (> (count b) (count a)) [b a] [a b])
-        optimal-path (diff* a* b*)
-        optimal-path (if (= a* a)
-                       optimal-path
-                       (transpose optimal-path))]
-    (myers/path->script b optimal-path)))
+  (opt/diff a b
+            (fn [a b]
+              (let [a (vec (cons nil a))
+                    b (vec (cons nil b))
+                    [a* b*] (if (> (count b) (count a)) [b a] [a b])
+                    edits (diff* a* b*)]
+                (edits->script b edits (if (= a* a) identity transpose))))))

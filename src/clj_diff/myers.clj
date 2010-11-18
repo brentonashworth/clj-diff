@@ -44,11 +44,11 @@
   longest snake on this diagonal. A snake is a sequence of diagonal moves
   connecting match points on the edit graph."
   [a b x y n m]
+  {:pre [(and (vector? a) (vector? b))]}
   (loop [x x
          y y]
     (if (and (< x n) (< y m) (= (get a (inc x)) (get b (inc y))))
-      (do
-        (recur (inc x) (inc y)))
+      (recur (inc x) (inc y))
       x)))
 
 (defn- band-diagonals
@@ -134,7 +134,7 @@
             []
             (:+ script))))
 
-(defn path->script
+(defn- path->script
   "Convert a path though an edit graph into an edit script."
   [b path]
   (-> (reduce (fn [e p]

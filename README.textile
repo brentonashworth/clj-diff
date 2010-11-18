@@ -23,50 +23,46 @@ h2. Notes
 
 I plan to try various algorithms to find one that works well with Clojure's persistent data structures and can benefit from parallel computation.
 
-The current algorithm is based on the unrefined algorithm in "An O(ND) Difference Algorithm and Its Variations" by Eugene W. Myers. This algorithm can be improved with the refinements described in that paper. One of the refinements uses a recursive algorithm which may allow for a parallel "divide and conquer" approach. This will be the baseline for comparison with future algorithms.
+There are currently two implementations corresponding to the two papers referenced below and incorporating the optimizations from Fraser.
 
-Before reading the source code for this algorithm, familiarize yourself with the edit graph in this paper.
-
-The algorithm from "An O(NP) Sequence Comparison Algorithm" by Wu, Manber, Myers and Miller is sequentially faster than the algorithm above but it will be interesting to see if it can be made to run in parallel and how it compares to the parallel version above.
-
-Finally I will explore various other parallel algorithms, comparing them to the work above and then finally choosing the best one.
+Before reading the source code, familiarize yourself with the edit graphs and terminology in the papers below.
 
 h2. References
 
 * "An O(ND) Difference Algorithm and Its Variations by Eugene W. Myers":http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.4.6927&rep=rep1&type=pdf
 * "An O(NP) Sequence Comparison Algorithm by Sun Wu, Udi Manber, Gene Myers and Webb Miller":http://portal.acm.org/citation.cfm?id=96223
 
-Let A and B be two sequences with lengths Q and M where Q >= M. Let D be the length of the minimum edit script for A and B. In the title of the first paper above N = Q + M. In the second paper N = Q and P = (1/2)D - (1/2)(Q - M).
+In order to understand the above two titles, you will need to know what N, D and P stand for. Let A and B be two sequences with lengths Q and M where Q >= M. Let D be the length of the minimum edit script for A and B. In the title of the first paper N = Q + M. In the second paper N = Q and P = (1/2)D - (1/2)(Q - M).
 
-h2. Performance
+* "Diff Strategies by Neil Fraser":http://neil.fraser.name/writing/diff/
 
-The <code>clj-diff.performace</code> namespace contains performance tests which generate the charts below. The "Fraser algorithm":http://code.google.com/p/google-diff-match-patch/ is a good Java implementation of diff and is being used here for comparison. The main goal is to find an algorithm that performs as well as, or better than, this.
+h2. Performance Tests
 
-For sequences of length 100, vary the number of mutations made to the sequence from 1 to 50. Mutations may be grouped in runs of length 1 to 5. For example, if we are going to make 5 mutations we may choose to add "a", "b", "c", "d" and "e" by making two changes adding "abc" and "de". These changes will always replace existing values so that the new sequence is the same size as the old one.
+The <code>clj-diff.performace</code> namespace contains performance tests which generate the charts below. The "Fraser":http://code.google.com/p/google-diff-match-patch/ algorithm is a good Java implementation of diff and is being used here for comparison. The main goal is to find an algorithm that performs as well as, or better than, this.
+
+h3. Results
+
+For sequences of length 100, vary the number of mutations made to the sequence from 1 to 50. These changes will always replace existing values so that the new sequence is the same size as the old one.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/mutations_100.png"/>
 
-For sequences of length 1000, vary the number of mutations from 1 to 500. Mutations may be grouped in runs of length 1 to 10.
+For sequences of length 1000, vary the number of mutations from 1 to 500.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/mutations_1000.png"/>
 
-Vary the length of the sequences from 100 to 20,000 always changing 5% of the sequence.
+Vary the length of the sequences, with 5%, 10% and 50% change.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_5.png"/>
 
-Vary the length of the sequences from 100 to 10,000 always changing 10% of the sequence.
-
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_10.png"/>
-
-Vary the length of the sequences from 100 to 3,000 always changing 50% of the sequence.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_50.png"/>
 
-Move the first element the sequence to the end. Vary the size of the sequence from 100 to 10,000.
+Move the first element the sequence to the end.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_move_first_to_end.png"/>
 
-Make a small change in the middle of the sequence. Vary the size of the sequence from 100 to 10,000.
+Make a small change in the middle of the sequence.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_add_in_middle.png"/>
 
