@@ -8,15 +8,20 @@ h2. Usage
 {:+ [[5 \a \s \space \i]], :- [6 8 9 10 11]}
 user=> (patch "John went to the movies." *1)
 "John was in the movies."
+user=> (edit-distance (diff "John went to the movies." "John was in the movies."))
+9
 </pre></code>
 
 There is already a "Java library":http://code.google.com/p/google-diff-match-patch/ which does this well. Why create a Clojure version? So that we can do this:
 
-<pre><code>user=> (diff [{:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7}]
-             [{:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7} {:a 1}])
+<pre><code>user=> (def a [{:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7}])
+user=> (def b [{:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7} {:a 1}])
+user=> (diff a b)
 {:+ [[6 {:a 1}]], :- [0]}
-user=> (patch [{:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7}] *1)
+user=> (patch a *1)
 ({:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7} {:a 1})
+user=> (edit-distance (diff a b))
+2
 </code></pre>
 
 h2. Notes
