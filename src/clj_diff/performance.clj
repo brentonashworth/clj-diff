@@ -244,23 +244,3 @@
 
 (defn performance-tests []
   (suite 10))
-
-;;
-;; Diff some actual source files.
-;;
-
-(defn source-file-test
-  "Perform a diff on three real source files."
-  []
-  (map #(let [[file [alg-name f]] %
-              before (slurp (str "files/" file "_before.clj"))
-              after (slurp (str "files/" file "_after.clj"))
-              d (time* 2 (fn [] (f before after)) edit-distance)
-              times (map :time d)
-              dist (distinct (map :result d))]
-          {:file file :a (count before) :b (count after)
-           :results [{:alg alg-name
-                      :mean (stats/mean times)
-                      :sd (stats/sd times)
-                      :distance dist}]})
-       (for [file ["miller" "myers" "perf"] f diff-fns] [file f])))
