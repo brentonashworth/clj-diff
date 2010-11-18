@@ -1,11 +1,14 @@
-(ns clj-diff.optimisations
-  "Common optimisations for diff algorithms.")
+(ns clj-diff.optimizations
+  "Common optimizations for diff algorithms.
+  See http://neil.fraser.name/writing/diff/.")
 
 (defprotocol Sequence
-  (common-prefix [a b] "Find a common prefix of two sequences")
-  (common-suffix [a b] "Find a common suffix of two sequences")
+  (common-prefix [a b] "Find a common prefix of two sequences.")
+  (common-suffix [a b] "Find a common suffix of two sequences.")
   (index-of [a b] [a b start]
-            "Return the index of the first occurance of b in a")
+            "Return the index of the first occurance of b in a. If a start
+   value is passed then return the index of the first occurance of b in a
+   after start.")
   (subsequence [s start] [s start end]
                "Returns a subsequence of the items in the sequence from
    start (inclusive) to end (exclusive).  If end is not supplied, defaults
@@ -79,9 +82,9 @@
                (.indexOf a b))
             ([^String a ^String b start]
                (.indexOf a b start)))
-  (subsequence ([a start]
+  (subsequence ([^String a start]
                   (.substring a start))
-               ([a start end]
+               ([^String a start end]
                   (.substring a start end)))
   (concatinate [a b]
                (str a b)))
@@ -171,7 +174,7 @@
   algorithm is required. At this point we know that a and b are different at
   either the beginning, the end, or both. A diff can be calculated manually if
   the length of a or b is 0 or if the smaller of the two sequences is contained
-  within the larger."
+  within the longer."
   [a b f]
   (let [ca (count a)
         cb (count b)]
@@ -198,7 +201,8 @@
         (f a b))))
 
 (defn diff
-  "Wrap the diff function f in pre and post optimisations."
+  "Wrap the diff function f in pre and post optimizations. Check for nil and
+  equality. Remove common prefix and suffix."
   [a b f]
   (let [diffs (cond (or (nil? a) (nil? b))
                     (throw (IllegalArgumentException. "Cannot diff nil."))

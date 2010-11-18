@@ -1,6 +1,6 @@
 (ns clj-diff.core
-  "Diff and patch for Clojure sequences."
-  (:require [clj-diff [myers :as myers]]))
+  "Diff, patch and related functions for Clojure sequences."
+  (:require [clj-diff [miller :as miller]]))
 
 (defn diff
   "Create the edit script that may be used to transform the sequance a into b.
@@ -18,14 +18,9 @@
   An index of -1 may appear in additions and is a special case which means to
   add the elements at the beginning of the sequence."
   [a b]
-  (myers/diff a b))
+  (miller/diff a b))
 
-(defn patch
-  "Use the instructions in the edit script to transform the sequence s into
-  a new sequence. If the edit script was created by using diff on a and b then
-  patch will use the edit script to transform a into b.
-
-  (diff a b) -> x, (patch a x) -> b."
+(defn patch*
   [s edit-script]
   (let [s (vec s)
         additions (:+ edit-script)
@@ -43,9 +38,26 @@
                   additions)]
     (filter #(not (nil? %)) (flatten s))))
 
+(defmulti ^{:arglists '([s edit-script])} patch
+  "Use the instructions in the edit script to transform the sequence s into
+  a new sequence. If the edit script was created by using diff on a and b then
+  patch will use the edit script to transform a into b.
+
+  (diff a b) -> x, (patch a x) -> b."
+  (fn [s _] (class s)))
+
+(defmethod patch :default
+  [s edit-script]
+  (patch* s edit-script))
+
+(defmethod patch String
+  [s edit-script]
+  (apply str (patch* s edit-script)))
+
 (defn edit-distance
-  "The edit distance is the minimum number of insertions and deletions
-   required to transform one sequence into another."
+  "Calculate the edit distance for the given edit script. The edit distance
+  is the minimum number of insertions and deletions required to transform one
+  sequence into another."
   [diff]
   (+ (count (:- diff))
      (reduce + (map #(count (drop 1 %)) (:+ diff)))))

@@ -4,10 +4,10 @@ Provides <code>diff</code> and <code>patch</code> functions for Clojure sequence
 
 h2. Usage
 
-<pre><code>user=> (diff "abcabba" "cbabac")
-{:+ [[2 \b] [6 \c]], :- [0 1 5]}
-user=> (patch "abcabba" *1)
-(\c \b \a \b \a \c)
+<pre><code>user=> (diff "John went to the movies." "John was in the movies.")
+{:+ [[5 \a \s \space \i]], :- [6 8 9 10 11]}
+user=> (patch "John went to the movies." *1)
+"John was in the movies."
 </pre></code>
 
 There is already a "Java library":http://code.google.com/p/google-diff-match-patch/ which does this well. Why create a Clojure version? So that we can do this:
@@ -21,24 +21,20 @@ user=> (patch [{:a 1} {:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7}] *1)
 
 h2. Notes
 
-I plan to try various algorithms to find one that works well with Clojure's persistent data structures and can benefit from parallel computation.
-
-There are currently two implementations corresponding to the two papers referenced below and incorporating the optimizations from Fraser.
-
-Before reading the source code, familiarize yourself with the edit graphs and terminology in the papers below.
+There are currently two implementations corresponding to the two papers referenced below and incorporating the optimizations from Fraser. Before reading the source code, familiarize yourself with the edit graphs and terminology in these papers.
 
 h2. References
 
 * "An O(ND) Difference Algorithm and Its Variations by Eugene W. Myers":http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.4.6927&rep=rep1&type=pdf
 * "An O(NP) Sequence Comparison Algorithm by Sun Wu, Udi Manber, Gene Myers and Webb Miller":http://portal.acm.org/citation.cfm?id=96223
 
-In order to understand the above two titles, you will need to know what N, D and P stand for. Let A and B be two sequences with lengths Q and M where Q >= M. Let D be the length of the minimum edit script for A and B. In the title of the first paper N = Q + M. In the second paper N = Q and P = (1/2)D - (1/2)(Q - M).
+In order to understand the above two titles, you will need to know what N, D and P stand for. Let A and B be two sequences with lengths Q and M where Q >= M. Let D be the length of the minimum edit script for A and B. In the title of the first paper N = Q + M. In the second paper N = Q and P = (1/2)D - (1/2)(Q - M). Therefore, the O(NP) version is faster which is visualized in the charts below.
 
 * "Diff Strategies by Neil Fraser":http://neil.fraser.name/writing/diff/
 
 h2. Performance Tests
 
-The <code>clj-diff.performace</code> namespace contains performance tests which generate the charts below. The "Fraser":http://code.google.com/p/google-diff-match-patch/ algorithm is a good Java implementation of diff and is being used here for comparison. The main goal is to find an algorithm that performs as well as, or better than, this.
+The <code>clj-diff.performace</code> namespace contains performance tests which generate the charts below. The "Fraser":http://code.google.com/p/google-diff-match-patch/ algorithm is a good Java implementation of diff and is being used here for comparison.
 
 h3. Results
 
@@ -58,7 +54,7 @@ Vary the length of the sequences, with 5%, 10% and 50% change.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_50.png"/>
 
-Move the first element the sequence to the end.
+Move the first element of the sequence to the end.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_move_first_to_end.png"/>
 

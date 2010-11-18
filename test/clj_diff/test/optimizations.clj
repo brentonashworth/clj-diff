@@ -1,5 +1,5 @@
-(ns clj-diff.test.optimisations
-  (:use [clj-diff.optimisations])
+(ns clj-diff.test.optimizations
+  (:use [clj-diff.optimizations])
   (:use [clojure.test]))
 
 (deftest common-prefix-test
@@ -51,7 +51,7 @@
          [\c \d])))
 
 (deftest diff*-test
-  (let [t (fn [a b] (#'clj-diff.optimisations/diff* a b (constantly nil)))]
+  (let [t (fn [a b] (#'clj-diff.optimizations/diff* a b (constantly nil)))]
     (is (= (t "" "abc")
            {:+ [[-1 \a \b \c]]
             :- []}))
@@ -79,7 +79,7 @@
     (is (nil? (t "abcac" "cbab")))))
 
 (deftest half-match-test
-  (let [t #'clj-diff.optimisations/half-match]
+  (let [t #'clj-diff.optimizations/half-match]
     (is (= (t "a" "b")
            nil))
     (is (= (t "bb" "bbg")

@@ -46,7 +46,7 @@
   (edit-distance [diffs]
                  (fraser-distance diffs)))
 
-(def diff-fns [["Myers Unrefined" myers-diff]
+(def diff-fns [["Myers" myers-diff]
                ["Miller" miller-diff]
                ["Fraser" fraser-diff]])
 

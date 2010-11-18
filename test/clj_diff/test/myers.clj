@@ -135,7 +135,7 @@
 
 (deftest roundtrip
   (are [a b]
-       (= b (apply str (patch a (diff a b))))
+       (= b (patch a (diff a b)))
        
        "aba" "aca"
        "abcabba" "cbabac"

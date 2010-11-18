@@ -7,7 +7,7 @@
    For two sequences a and b, a is on the x axis and b is on the y axis of
    the edit graph. n and m are the lengths of a and b respectively. Diagonal
    k is the diagonal where k = x - y for all points (x, y) on the diagonal."
-  (:require [clj-diff [optimisations :as opt]]))
+  (:require [clj-diff [optimizations :as opt]]))
 
 (defn- x-down
   "Get the x value of the furthest reaching d-path on the diagonal below k."

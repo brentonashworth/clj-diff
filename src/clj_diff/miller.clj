@@ -3,14 +3,14 @@
    Sun Wu, Udi Manber, Gene Myers and Web Miller.
 
    Please refer to the above paper while reading this code."
-  (:require [clj-diff [optimisations :as opt]])
+  (:require [clj-diff [optimizations :as opt]])
   (:require [clj-diff [myers :as myers]]))
 
 (defn- next-x
   "Get the next farthest x value by looking at previous farthest values on the
   diagonal above and below diagonal k. Choose the greater of the farthest x on
   the above diagonal and the farthest x on the diagonal below plus one. fp is
-  a map of p values to maps of diagonals => farthest points."
+  a map of diagonals => farthest points."
   [k fp]
   (max (inc (get fp (dec k) -1))
        (get fp (inc k) -1)))
@@ -27,7 +27,9 @@
 (defn- search-p-band
   "Given a p value, search all diagonals in the p-band for the furthest
   reaching endpoints. Record the furthest reaching endpoint for each p value
-  in the map fp. Returns an updated fp map for p."
+  in the map fp. Returns an updated fp map for p. a and b are the two
+  sequences and n and m are their lengths respectively. delta is the
+  diagonal of the sink and is equal to n - m."
   [a b n m delta p fp]
   (reduce (fn [fp next-k]
             (assoc fp next-k (snake a b n m next-k fp)))
@@ -38,8 +40,8 @@
 
 (defn ses
   "Find the size of the shortest edit script (ses). Returns a 3-tuple of the
-  size of the ses, the delta value (which is the diagonal of the end point)
-  and the fp map. The optimal path form source to sink can be constructed from
+  size of the ses, the delta value (which is the diagonal of the sink)
+  and the fp map. The optimal path from source to sink can be constructed from
   this information."
   [a b]
   {:pre [(>= (count a) (count b))]}
@@ -56,18 +58,33 @@
                (assoc fp p
                       (search-p-band a b n m delta p (get fp (dec p) {}))))))))
 
-(defn- edit-dist [delta p k]
+;;
+;; Build the edit script from the map of farthest endpoints.
+;;
+
+(defn- edit-dist
+  "Given a delta, p and k value, calculate the edit distance."
+  [delta p k]
   (if (> k delta)
     (+ (* 2 (- p (- k delta))) k)
     (+ (* 2 p) k)))
 
-(defn- p-value-up [delta p k]
+(defn- p-value-up
+  "Calculate the p value that will be used to look up the farthest reaching
+  end point for the diagonal above k."
+  [delta p k]
   (if (> (inc k) delta) p (dec p)))
 
-(defn- p-value-left [delta p k]
+(defn- p-value-left
+  "Calculate the p value that will be used to look up the farthest reaching
+  end point for the diagonal below k."
+  [delta p k]
   (if (< (dec k) delta) p (dec p)))
 
-(defn- look-up [graph delta p x k]
+(defn- look-up
+  "Get information about the vertex above the one at x on k. If this vertex
+  is chosen, it will represent an insertion."
+  [graph delta p x k]
   (when (> (- x k) 0)
     (let [up-k (inc k)
           up-p (p-value-up delta p k)
@@ -81,7 +98,10 @@
          :k up-k
          :d (edit-dist delta up-p up-k)}))))
 
-(defn- look-left [graph delta p x k]
+(defn- look-left
+  "Get information about the vertex to the left of the one at x on k. If this
+  vertex is chosen, it will represent an deletion."
+  [graph delta p x k]
   (when (> x 0)
     (let [left-k (dec k)
           left-p (p-value-left delta p k)
@@ -96,7 +116,7 @@
          :d (edit-dist delta left-p left-k)}))))
 
 (defn- backtrack-snake
-  "Find the x value of the start of the longest snake ending at (x, y)."
+  "Find the x value at the head of the longest snake ending at (x, y)."
   [a b x y]
   {:pre [(and (>= x 0) (>= y 0))]}
   (loop [x x
@@ -106,7 +126,7 @@
       (recur (dec x) (dec y)))))
 
 (defn- next-edit
-  "Return the next move through the edit graph which will decrease the
+  "Find the next move through the edit graph which will decrease the
   edit distance by 1."
   [a b graph delta p x k]
   {:post [(= (dec (edit-dist delta p k)) (:d %))]}
@@ -123,8 +143,8 @@
           move)))))
 
 (defn- edits
-  "Return a sequence of edits. Each edit represents two points on the graph, a
-  from and to point."
+  "Calculate the sequence of edits from the map of farthest reaching end
+  points."
   [a b p delta graph]
   (let [next-fn (partial next-edit a b graph delta)]
     (loop [edits '()
@@ -136,13 +156,15 @@
           (recur (conj edits next) next))))))
 
 (defn- diff*
-  "Calculate the optimal path using the miller algorithm. This algorithm
-  requires that a >= b."
+  "Calculate the sequence of edits required to transform a into b  using the
+  miller algorithm. This algorithm requires that a >= b."
   [a b]
   {:pre [(>= (count a) (count b))]}
   (apply edits a b (ses a b)))
 
 (defn- transpose
+  "If a is shorter than b, then the diff is calculated from b to a and this
+  function is used to transpose the results into a diff from a to b."
   [edit]
   (-> edit
       (assoc :edit (if (= :insert (:edit edit)) :delete :insert))
@@ -150,6 +172,7 @@
       (assoc :k (- (:k edit)))))
 
 (defn- edits->script
+  "Convert a sequence of edits into an edit script."
   [b edits f]
   (reduce (fn [script edit]
             (let [{:keys [edit x k]} (f edit)
