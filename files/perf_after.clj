@@ -52,7 +52,7 @@
 
 (defn random-between
   "Generate a random number between low and high. Can also be passed
-  characters as the bounds."
+characters as the bounds."
   [lo hi]
   (let [r (java.util.Random.)
         lo (if (char? lo) (int lo) lo)
@@ -62,7 +62,7 @@
 
 (defn random-string
   "Generage a random string composed of upper and lower case letters and the
-  numbers 0 through 9."
+numbers 0 through 9."
   [size]
   (loop [length (random-between size size)
          v []]
@@ -77,7 +77,7 @@
 
 (defn mutate
   "Make n random mutations to the string s. Mutations will be randomly grouped
-  into runs of 1 to g."
+into runs of 1 to g."
   [s n g]
   (let [size (count s)
         s (vec s)
@@ -101,7 +101,7 @@
 
 (defn time*
   "Calculate the time, in milliseconds, to run the passed expression. Returns
-  a sequence of maps containing the times and return values of each run."
+a sequence of maps containing the times and return values of each run."
   ([expr]
      (time* 1 expr identity))
   ([n expr]
@@ -116,7 +116,7 @@
 
 (defn sample
   "For strings a and b, run each diff algorithm 'total-runs' times and then
-  calculate stats based on the fastest 'take-top' runs."
+calculate stats based on the fastest 'take-top' runs."
   [a b take-top total-runs]
   (map #(let [[alg f] %
               d (take take-top
@@ -133,7 +133,7 @@
 
 (defn vary-mutations
   "For a sting on length n, vary the number of mutations that are made to
-  the string."
+the string."
   ([n m-range g]
      (vary-mutations n m-range g 2 3))
   ([n m-range g t r]
@@ -244,23 +244,3 @@
 
 (defn performance-tests []
   (suite 10))
-
-;;
-;; Diff some actual source files.
-;;
-
-(defn source-file-test
-  "Perform a diff on three real source files."
-  []
-  (map #(let [[file [alg-name f]] %
-              before (slurp (str "files/" file "_before.clj"))
-              after (slurp (str "files/" file "_after.clj"))
-              d (time* 2 (fn [] (f before after)) edit-distance)
-              times (map :time d)
-              dist (distinct (map :result d))]
-          {:file file :a (count before) :b (count after)
-           :results [{:alg alg-name
-                      :mean (stats/mean times)
-                      :sd (stats/sd times)
-                      :distance dist}]})
-       (for [file ["miller" "myers" "perf"] f diff-fns] [file f])))
