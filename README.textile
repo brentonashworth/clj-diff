@@ -28,11 +28,34 @@ h2. Notes
 
 There are currently two implementations corresponding to the two papers referenced below and incorporating the optimizations from Fraser. Before reading the source code, familiarize yourself with the edit graphs and terminology in these papers.
 
-The charts below show the performance of the different algorithms in different situations. The most interesting chart is shown here. This test run simulates the most common diff scenarios and illustrates how close the performance is between the Miller and Fraser algorithms.
+The "Performance Tests" section below contains charts which show the performance of the different algorithms in different situations. The most interesting chart is shown here. This test run simulates a common diff scenario for various sequence lengths and illustrates the similarities in performance between the Miller and Fraser algorithms.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_5000_5.png"/>
 
 As the charts below demonstrate, for any larger sequence, with equal or greater change, the Miller algorithm outperforms the Fraser algorithm.
+
+h2. Installation
+
+h3. Leiningen
+
+Add <code>[clj-diff "1.0.0-SNAPSHOT"]</code> to your :dependencies in project.clj.
+
+h3. Maven
+
+Add the following dependency:
+
+<pre><code><dependency>
+  <groupId>clj-diff</groupId>
+  <artifactId>clj-diff</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+</dependency></code></pre>
+
+...which comes from Clojars...
+
+<pre><code><repository>
+  <id>clojars.org</id>
+  <url>http://clojars.org/repo</url>
+</repository></code></pre>
 
 h2. References
 

@@ -1,0 +1,2 @@
+rm clj-diff-*
+rm -rf classes

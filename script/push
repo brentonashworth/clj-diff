@@ -1,0 +1,3 @@
+lein jar
+lein pom
+scp pom.xml clj-diff-* clojars@clojars.org:
