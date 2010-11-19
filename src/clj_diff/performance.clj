@@ -20,9 +20,9 @@
   (miller/diff a b))
 
 (defn fraser-diff [a b]
-  (let [dmp (diff_match_patch.)
-        _ (set! (. dmp Diff_Timeout) 0)]
-    (.diff_main dmp a b)))
+  (let [dmp (diff_match_patch.)]
+    (do (set! (. dmp Diff_Timeout) 0)
+        (.diff_main dmp a b))))
 
 (defn fraser-distance [diffs]
   (let [diffs (map #(vector (.toString (.operation %)) (.text %)) (seq diffs))]
@@ -222,23 +222,22 @@
                               n)]
     (visualize-2 "Add in the Middle" "length_add_in_middle" d)))
 
-(defn percent-change [p x n]
-  (let [maximum 20000
-        percent (/ p 100.0)
-        maximum (- maximum (* maximum percent 1.7))
-        d (vary-string-length (range 100 maximum (quot maximum x))
+(defn percent-change [max p x n]
+  (let [percent (/ p 100.0)
+        d (vary-string-length (range 100 max (quot max x))
                               #(mutate % (* (count %) percent) 10)
                               (quot (* n 2) 3)
                               n)]
-    (visualize-2 (str p "% change") (str "length_" p) d)))
+    (visualize-2 (str p "% change") (str "length_" max "_" p) d)))
 
 (defn suite [x]
   (do
     (vary-mutation-100 x 50)
     (vary-mutation-1000 x 10)
-    (percent-change 5 x 3)
-    (percent-change 10 x 3)
-    (percent-change 50 x 3)
+    (percent-change 15000 5 x 3)
+    (percent-change 7000 5 x 10)
+    (percent-change 5000 10 x 3)
+    (percent-change 2000 50 x 3)
     (move-first-to-end x 50)
     (add-in-the-middle x 50)))
 

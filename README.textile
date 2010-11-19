@@ -28,6 +28,12 @@ h2. Notes
 
 There are currently two implementations corresponding to the two papers referenced below and incorporating the optimizations from Fraser. Before reading the source code, familiarize yourself with the edit graphs and terminology in these papers.
 
+The charts below show the performance of the different algorithms in different situations. The most interesting chart is shown here. This test run simulates the most common diff scenarios and illustrates how close the performance is between the Miller and Fraser algorithms.
+
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_5000_5.png"/>
+
+As the charts below demonstrate, for any larger sequence, with equal or greater change, the Miller algorithm outperforms the Fraser algorithm.
+
 h2. References
 
 * "An O(ND) Difference Algorithm and Its Variations by Eugene W. Myers":http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.4.6927&rep=rep1&type=pdf
@@ -53,11 +59,11 @@ For sequences of length 1000, vary the number of mutations from 1 to 500.
 
 Vary the length of the sequences, with 5%, 10% and 50% change.
 
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_5.png"/>
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_15000_5.png"/>
 
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_10.png"/>
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_5000_10.png"/>
 
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_50.png"/>
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_2000_50.png"/>
 
 Move the first element of the sequence to the end.
 

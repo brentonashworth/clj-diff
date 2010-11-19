@@ -133,11 +133,10 @@
   (let [d (edit-dist delta p k)
         head-x (backtrack-snake a b x (- x k))]
     (loop [head-x head-x]
-      (let [up (look-up graph delta p head-x k)
-            left (look-left graph delta p head-x k)
-            move (first (filter #(and (not (nil? %))
+      (let [move (first (filter #(and (not (nil? %))
                                       (= (:d %) (dec d)))
-                                [left up]))]
+                                (map #(% graph delta p head-x k)
+                                     [look-left look-up])))]
         (if (and (< head-x x) (nil? move))
           (recur (inc head-x))
           move)))))
