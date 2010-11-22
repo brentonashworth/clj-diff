@@ -3,14 +3,14 @@
   (:require [clj-diff [miller :as miller]]))
 
 (defn diff
-  "Create the edit script that may be used to transform the sequance a into b.
-  An edit script is a map with the keys :+ and :- for additions and deletions.
+  "Create the edit script for transforming sequance a into sequence b.
+  An edit script is a map with keys :+ and :- for additions and deletions.
   Additions are represented as a sequence of vectors. The first item in each
   vector is the index where the rest of the items in the vector are to be
   inserted. For example [3 b c] means to insert b an c after whatever is
   in index 3. Deletions are represented as a sequence of indexes to delete.
 
-  For example: the diff of 'abcabba' and 'cbabac' whould generate the edit
+  For example: the diff of 'abcabba' and 'cbabac' would generate the edit
   script below.
 
   {:+ [[2 b] [6 c]], :- [0 1 5]}

@@ -135,7 +135,7 @@
 
 (defn- half-match
   "Find a subsequence shared by both sequences which is at least half as long
-  as the longer sequence. Return a vector of five elements is one is found and
+  as the longer sequence. Return a vector of five elements if one is found and
   and nil if not. The five elements are: the common sequence, the prefix
   of sequence a, the suffix of sequence a, the prefix of sequence b and the
   suffix of sequence b."
@@ -172,9 +172,8 @@
 (defn- diff*
   "Calculate the diff using the function f only after ensuring that this
   algorithm is required. At this point we know that a and b are different at
-  either the beginning, the end, or both. A diff can be calculated manually if
-  the length of a or b is 0 or if the smaller of the two sequences is contained
-  within the longer."
+  both ends. A diff can be calculated manually if the length of a or b is 0
+  or if the smaller of the two sequences is contained within the longer."
   [a b f]
   (let [ca (count a)
         cb (count b)]
@@ -201,8 +200,8 @@
         (f a b))))
 
 (defn diff
-  "Wrap the diff function f in pre and post optimizations. Check for nil and
-  equality. Remove common prefix and suffix."
+  "Return the diff of a and b. Wrap the diff function f in pre and post
+  optimizations. Check for nil and equality. Remove common prefix and suffix."
   [a b f]
   (let [diffs (cond (or (nil? a) (nil? b))
                     (throw (IllegalArgumentException. "Cannot diff nil."))
