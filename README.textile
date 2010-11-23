@@ -69,6 +69,23 @@ In order to understand the above two titles, you will need to know what N, D and
 
 * "Diff Strategies by Neil Fraser":http://neil.fraser.name/writing/diff/
 
+h2. Roadmap
+
+h3. Version 1.0
+
+# Text diff visualization.
+# HTML diff visualization.
+# Symantic cleanup.
+# Sequence chunking. Allow line based diff for strings.
+
+h3. Version 2.0
+
+# Improve performance by searching the edit graph from both ends at the same time.
+# Arbitrary Clojure form diff. Integrate with clojure.data/diff in Clojure 1.3
+# Set the maximum time to look for an optimal diff.
+# When finding an edit path, choose the one with the lowest Levenshtein distance. This will ensure that the <code>levenshtein-distance</code> function returns the correct value.
+
+
 h2. License
 
 Copyright (C) 2010 Brenton Ashworth
