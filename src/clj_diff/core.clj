@@ -20,23 +20,28 @@
   [a b]
   (miller/diff a b))
 
-(defn patch*
-  [s edit-script]
+(defn- merge-patch
+  [s edit-script delete-symbol]
   (let [s (vec s)
         additions (:+ edit-script)
         deletions (:- edit-script)
         s (reduce (fn [a b]
-                    (assoc a b nil))
+                    (assoc a b delete-symbol))
                   s
                   deletions)
         s (reduce (fn [a b]
-                    (let [index (first b)]
+                    (let [index (first b)
+                          items (rest b)]
                       (if (= index -1)
-                        (assoc a 0 (conj (vec (rest b)) (get a 0)))
-                        (assoc a index (conj (rest b) (get a index))))))
+                        (assoc a 0 (conj (vec items) (get a 0)))
+                        (assoc a index (conj items (get a index))))))
                   s
                   additions)]
-    (filter #(not (nil? %)) (flatten s))))
+    (flatten s)))
+
+(defn patch*
+  [s edit-script]
+  (filter #(not (nil? %)) (merge-patch s edit-script nil)))
 
 (defmulti ^{:arglists '([s edit-script])} patch
   "Use the instructions in the edit script to transform the sequence s into
@@ -58,6 +63,43 @@
   "Calculate the edit distance for the given edit script. The edit distance
   is the minimum number of insertions and deletions required to transform one
   sequence into another."
-  [diff]
-  (+ (count (:- diff))
-     (reduce + (map #(count (drop 1 %)) (:+ diff)))))
+  [edit-script]
+  (+ (count (:- edit-script))
+     (reduce + (map #(count (drop 1 %)) (:+ edit-script)))))
+
+(defn levenshtein-distance
+  "Returns the Levenshtein distance between two sequences. May either be passed
+  the two sequences or a diff of the two sequences.
+
+  From http://en.wikipedia.org/wiki/Levenshtein_distance:
+  The Levenshtein distance between two strings is the minimum number of edits
+  needed to transform one string into the other, with the allowable edit
+  operations being insertion, deletion and substitution of a single character.
+
+  This function works not only with strings but with any Clojure sequence.
+
+  Warning! Technically this function is estimating the Levenshtein distance
+  from a computed diff. Most of the time, it is the same as the real Levenshtein
+  distance but in same cases it may be larger. The reason for this is that
+  there may be multiple paths through an edit graph with the same edit
+  distance but with differing Levenshtein distance. A future improvement to
+  the diff algorithm whould be to find all paths and prefer the one with the
+  minimum Levenshtein distance."
+  ([a b]
+     (levenshtein-distance (diff a b)))
+  ([edit-script]
+     (let [additions (map #(let [index (first %)
+                                 items (rest %)]
+                             (apply vector index (repeat (count items) :a)))
+                          (:+ edit-script))
+           max-index (max (apply max (map first additions))
+                          (apply max (:- edit-script)))
+           v (vec (repeat max-index :e))
+           patched (merge-patch v (merge edit-script {:+ additions}) :d)
+           edit-groups (filter #(not= :e (first %))
+                               (partition-by #(if (= % :e) :e :edit)
+                                             patched))]
+       (reduce + (map (fn [group]
+                        (max (count (filter #(= % :a) group))
+                             (count (filter #(= % :d) group))))
+                      edit-groups)))))

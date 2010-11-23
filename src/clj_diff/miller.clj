@@ -3,8 +3,7 @@
    Sun Wu, Udi Manber, Gene Myers and Web Miller.
 
    Please refer to the above paper while reading this code."
-  (:require [clj-diff [optimizations :as opt]])
-  (:require [clj-diff [myers :as myers]]))
+  (:require [clj-diff [optimizations :as opt]]))
 
 (defn- next-x
   "Get the next farthest x value by looking at previous farthest values on the
@@ -20,9 +19,14 @@
   point at the end of the longest snake on this diagonal. A snake is a
   sequence of diagonal moves connecting match points on the edit graph."
   [a b n m k fp]
+  {:pre [(and (vector? a) (vector? b))]}
   (let [x (next-x k fp)
         y (- x k)]
-    (myers/snake a b x y n m)))
+    (loop [x x
+           y y]
+      (if (and (< x n) (< y m) (= (get a (inc x)) (get b (inc y))))
+        (recur (inc x) (inc y))
+        x))))
 
 (defn- search-p-band
   "Given a p value, search all diagonals in the p-band for the furthest
