@@ -60,12 +60,14 @@
   (apply str (patch* s edit-script)))
 
 (defn edit-distance
-  "Calculate the edit distance for the given edit script. The edit distance
-  is the minimum number of insertions and deletions required to transform one
-  sequence into another."
-  [edit-script]
-  (+ (count (:- edit-script))
-     (reduce + (map #(count (drop 1 %)) (:+ edit-script)))))
+  "Returns the edit distance between the two passed sequences. May also be
+  passed an edit script. The edit distance is the minimum number of insertions
+  and deletions required to transform one sequence into another."
+  ([a b]
+     (edit-distance (diff a b)))
+  ([edit-script]
+     (+ (count (:- edit-script))
+        (reduce + (map #(count (drop 1 %)) (:+ edit-script))))))
 
 (defn levenshtein-distance
   "Returns the Levenshtein distance between two sequences. May either be passed

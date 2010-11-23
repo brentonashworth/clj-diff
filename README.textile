@@ -1,15 +1,18 @@
 h1. clj-diff
 
-Provides <code>diff</code> and <code>patch</code> functions for Clojure sequences where <code>(diff a b) -> x</code> and <code>(patch a x) -> b</code>.
+Provides <code>diff</code> and <code>patch</code> functions for Clojure sequences where <code>(diff a b) -> x</code> and <code>(patch a x) -> b</code>. Also provides <code>edit-distance</code> and <code>levenshtein-distance</code> functions for calculating the difference between two sequences.
 
 h2. Usage
 
-<pre><code>user=> (diff "John went to the movies." "John was in the movies.")
+<pre><code>user=> (use 'clj-diff.core)
+user=> (diff "John went to the movies." "John was in the movies.")
 {:+ [[5 \a \s \space \i]], :- [6 8 9 10 11]}
 user=> (patch "John went to the movies." *1)
 "John was in the movies."
-user=> (edit-distance (diff "John went to the movies." "John was in the movies."))
+user=> (edit-distance "John went to the movies." "John was in the movies."))
 9
+user=> (levenshtein-distance "John went to the movies." "John was in the movies.")
+8
 </pre></code>
 
 There is already a "Java library":http://code.google.com/p/google-diff-match-patch/ which does this well. Why create a Clojure version? So that we can do this:
@@ -20,19 +23,19 @@ user=> (diff a b)
 {:+ [[6 {:a 1}]], :- [0]}
 user=> (patch a *1)
 ({:a 2} {:a 3} {:a 4} {:a 5} {:a 6} {:a 7} {:a 1})
-user=> (edit-distance (diff a b))
+user=> (edit-distance a b)
 2
 </code></pre>
 
 h2. Notes
 
-There are currently two implementations corresponding to the two papers referenced below and incorporating the optimizations from Fraser. Before reading the source code, familiarize yourself with the edit graphs and terminology in these papers.
+The current diff algorithm comes from the paper "An O(NP) Sequence Comparison Algorithm":http://portal.acm.org/citation.cfm?id=96223 by Sun Wu, Udi Manber, Gene Myers and Webb Miller. It is fast and memory efficient. It also makes use of the pre-diff optimizations mentioned in Neil Fraser's "Diff Strategies":http://neil.fraser.name/writing/diff/. The worst-case running time of the algorithm is dependent only on the length of the longest sequence (N) and the number of deletions (P). This is much better than the "Myers":http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.4.6927&rep=rep1&type=pdf algorithm which is an O(ND) algorithm where N is the sum of the length of the two sequences and D is the edit distance.
 
-The "Performance Tests" section below contains charts which show the performance of the different algorithms in different situations. The most interesting chart is shown here. This test run simulates a common diff scenario for various sequence lengths and illustrates the similarities in performance between the Miller and Fraser algorithms.
+I have created a "separate project":http://github.com/brentonashworth/clj-diff-performance for comparing the performance of different diff algorithms. The main performance goal of this project is to create a Clojure diff that can outperform Fraser's Java implementation. One of the most interesting results is show below.
 
 <img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_5000_5.png"/>
 
-As the charts below demonstrate, for any larger sequence, with equal or greater change, the Miller algorithm outperforms the Fraser algorithm.
+This chart shows the most interesting range of comparison between the three algorithms. The current algorithm being used by clj-diff is labeled "Miller". For larger sequences, the Miller algorithm outperforms Fraser. To summarize all of the performance test results; the Miller algorithm is never more than 25 milliseconds slower than the Fraser algorithm but the Fraser algorithm can be multiple seconds slower, and will run out of memory more quickly, for large sequences. For more information about performance see the "clj-diff-performance":http://github.com/brentonashworth/clj-diff-performance project.
 
 h2. Installation
 
@@ -65,36 +68,6 @@ h2. References
 In order to understand the above two titles, you will need to know what N, D and P stand for. Let A and B be two sequences with lengths Q and M where Q >= M. Let D be the length of the minimum edit script for A and B. In the title of the first paper N = Q + M. In the second paper N = Q and P = (1/2)D - (1/2)(Q - M). Therefore, the O(NP) version is faster which is visualized in the charts below.
 
 * "Diff Strategies by Neil Fraser":http://neil.fraser.name/writing/diff/
-
-h2. Performance Tests
-
-The <code>clj-diff.performace</code> namespace contains performance tests which generate the charts below. The "Fraser":http://code.google.com/p/google-diff-match-patch/ algorithm is a good Java implementation of diff and is being used here for comparison.
-
-h3. Results
-
-For sequences of length 100, vary the number of mutations made to the sequence from 1 to 50. These changes will always replace existing values so that the new sequence is the same size as the old one.
-
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/mutations_100.png"/>
-
-For sequences of length 1000, vary the number of mutations from 1 to 500.
-
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/mutations_1000.png"/>
-
-Vary the length of the sequences, with 5%, 10% and 50% change.
-
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_15000_5.png"/>
-
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_5000_10.png"/>
-
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_2000_50.png"/>
-
-Move the first element of the sequence to the end.
-
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_move_first_to_end.png"/>
-
-Make a small change in the middle of the sequence.
-
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_add_in_middle.png"/>
 
 h2. License
 
