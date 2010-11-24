@@ -56,8 +56,8 @@
 
   java.lang.String
   (common-prefix [^String a ^String b]
-                 (let [n (Math/min (.length a) (.length b))
-                       i (loop [i 0]
+                 (let [n (int (Math/min (.length a) (.length b)))
+                       i (loop [i (int 0)]
                            (if (< i n)
                              (if (not= (.charAt a i) (.charAt b i))
                                i
@@ -65,10 +65,10 @@
                              n))]
                    [i (.substring a i) (.substring b i)]))
   (common-suffix [^String a ^String b]
-                 (let [a-length (.length a)
-                       b-length (.length b)
-                       n (Math/min a-length b-length)
-                       i (loop [i 1]
+                 (let [a-length (int (.length a))
+                       b-length (int (.length b))
+                       n (int (Math/min a-length b-length))
+                       i (loop [i (int 1)]
                            (if (<= i n)
                              (if (not= (.charAt a (- a-length i))
                                        (.charAt b (- b-length i)))
@@ -80,13 +80,13 @@
                     (.substring b 0 (- b-length i))]))
   (index-of ([^String a ^String b]
                (.indexOf a b))
-            ([^String a ^String b start]
+            ([^String a ^String b ^Integer start]
                (.indexOf a b start)))
-  (subsequence ([^String a start]
+  (subsequence ([^String a ^Integer start]
                   (.substring a start))
-               ([^String a start end]
+               ([^String a ^Integer start ^Integer end]
                   (.substring a start end)))
-  (concatinate [a b]
+  (concatinate [^String a ^String b]
                (str a b)))
 
 (defn- short-within-long
@@ -94,7 +94,7 @@
   use the expensive diff algorithm for this."
   [a b ca cb]
   (let [[short long] (if (> ca cb) [b a] [a b])
-        i (index-of long short)]
+        i (int (index-of long short))]
     (if (= i -1)
       nil
       (if (= short a)
@@ -110,7 +110,7 @@
                          (range (+ i cb) ca)))}))))
 
 (defn- half-match* [long short i]
-  (let [target (subsequence long i (+ i (/ (count long) 4)))]
+  (let [target (subsequence long i (+ i (quot (count long) 4)))]
     (loop [j (index-of short target 0)
            result []]
       (if (= j -1)
@@ -146,8 +146,8 @@
     (if (or (< long-count 4)
             (< (* short-count 2) long-count))
       nil
-      (let [hm-second-q (half-match* long short (/ (+ long-count 3) 4))
-            hm-third-q (half-match* long short (/ (+ long-count 1) 2))
+      (let [hm-second-q (half-match* long short (quot (+ long-count 3) 4))
+            hm-third-q (half-match* long short (quot (+ long-count 1) 2))
             half-match (cond (and hm-second-q hm-third-q)
                              (if (> (count (first hm-second-q))
                                     (count (first hm-third-q)))
