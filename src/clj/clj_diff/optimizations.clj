@@ -1,6 +1,7 @@
 (ns clj-diff.optimizations
   "Common optimizations for diff algorithms.
-  See http://neil.fraser.name/writing/diff/.")
+  See http://neil.fraser.name/writing/diff/."
+  (:import clj_diff.FastStringOps))
 
 (defprotocol Sequence
   (common-prefix [a b] "Find a common prefix of two sequences.")
@@ -56,28 +57,13 @@
 
   java.lang.String
   (common-prefix [^String a ^String b]
-                 (let [n (int (Math/min (.length a) (.length b)))
-                       i (loop [i (int 0)]
-                           (if (< i n)
-                             (if (not= (.charAt a i) (.charAt b i))
-                               i
-                               (recur (inc i)))
-                             n))]
+                 (let [i (FastStringOps/commonPrefix a b)]
                    [i (.substring a i) (.substring b i)]))
   (common-suffix [^String a ^String b]
-                 (let [a-length (int (.length a))
-                       b-length (int (.length b))
-                       n (int (Math/min a-length b-length))
-                       i (loop [i (int 1)]
-                           (if (<= i n)
-                             (if (not= (.charAt a (- a-length i))
-                                       (.charAt b (- b-length i)))
-                               (dec i)
-                               (recur (inc i)))
-                             n))]
+                 (let [i (FastStringOps/commonSuffix a b)]
                    [i
-                    (.substring a 0 (- a-length i))
-                    (.substring b 0 (- b-length i))]))
+                    (.substring a 0 (- (.length a) i))
+                    (.substring b 0 (- (.length b) i))]))
   (index-of ([^String a ^String b]
                (.indexOf a b))
             ([^String a ^String b ^Integer start]
