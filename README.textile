@@ -33,9 +33,9 @@ The current diff algorithm comes from the paper "An O(NP) Sequence Comparison Al
 
 I have created a "separate project":http://github.com/brentonashworth/clj-diff-performance for comparing the performance of different diff algorithms. The main performance goal of this project is to create a Clojure diff that can outperform Fraser's Java implementation. One of the most interesting results is show below.
 
-<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_5000_5.png"/>
+<img src="http://s3.amazonaws.com/formpluslogic-public/images/clj-diff/length_7000_5.png"/>
 
-This chart shows the most interesting range of comparison between the three algorithms. The current algorithm being used by clj-diff is labeled "Miller". For larger sequences, the Miller algorithm outperforms Fraser. To summarize all of the performance test results; the Miller algorithm is never more than 25 milliseconds slower than the Fraser algorithm but the Fraser algorithm can be multiple seconds slower, and will run out of memory more quickly, for large sequences. For more information about performance see the "clj-diff-performance":http://github.com/brentonashworth/clj-diff-performance project.
+This chart shows the most interesting range of comparison between the three algorithms. The current algorithm being used by clj-diff is labeled "Miller". For larger sequences, the Miller algorithm outperforms Fraser. To summarize all of the performance test results; the Miller algorithm is never more than 50 milliseconds slower than the Fraser algorithm but the Fraser algorithm can be multiple seconds slower, and will run out of memory more quickly, for large sequences. For more information about performance see the "clj-diff-performance":http://github.com/brentonashworth/clj-diff-performance project.
 
 h2. Installation
 
@@ -81,7 +81,7 @@ h3. Version 1.0
 h3. Version 2.0
 
 # Improve performance by searching the edit graph from both ends at the same time.
-# Arbitrary Clojure form diff. Integrate with clojure.data/diff in Clojure 1.3
+# Arbitrary Clojure form diff/Nested diffs. Integrate with clojure.data/diff in Clojure 1.3
 # Set the maximum time to look for an optimal diff.
 # When finding an edit path, choose the one with the lowest Levenshtein distance. This will ensure that the <code>levenshtein-distance</code> function returns the correct value.
 

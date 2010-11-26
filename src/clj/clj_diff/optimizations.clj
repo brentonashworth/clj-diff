@@ -1,131 +1,69 @@
 (ns clj-diff.optimizations
-  "Common optimizations for diff algorithms.
+  "String optimizations for diff algorithms.
   See http://neil.fraser.name/writing/diff/."
   (:import clj_diff.FastStringOps))
 
-(defprotocol Sequence
-  (common-prefix [a b] "Find a common prefix of two sequences.")
-  (common-suffix [a b] "Find a common suffix of two sequences.")
-  (index-of [a b] [a b start]
-            "Return the index of the first occurance of b in a. If a start
-   value is passed then return the index of the first occurance of b in a
-   after start.")
-  (subsequence [s start] [s start end]
-               "Returns a subsequence of the items in the sequence from
-   start (inclusive) to end (exclusive).  If end is not supplied, defaults
-   to (count sequence).")
-  (concatinate [a b] "Concatinate two sequences."))
+(defn common-prefix [^String a ^String b]
+  (let [i (FastStringOps/commonPrefix a b)]
+    [i (.substring a i) (.substring b i)]))
 
-(extend-protocol Sequence
-
-  clojure.lang.Sequential
-  (common-prefix [a b]
-                 (let [a (seq a)
-                       b (seq b)
-                       common (count (take-while true? (map #(= %1 %2) a b)))]
-                   [common (drop common a) (drop common b)]))
-  (common-suffix [a b]
-                 (let [a (vec (seq a))
-                       b (vec (seq b))
-                       common (count (take-while true? (map #(= %1 %2)
-                                                            (rseq a)
-                                                            (rseq b))))]
-                   [common
-                    (take (- (count a) common) a)
-                    (take (- (count b) common) b)]))
-  (index-of ([a b]
-               (index-of a b 0))
-            ([a b start]
-               (let [b (seq b)
-                     size (count b)]
-                 (loop [a (drop start (seq a))
-                        target b
-                        i start]
-                   (cond (= (count target) 0)
-                         (- i size)
-                         (> (count a) 0)
-                         (if (= (first target) (first a))
-                           (recur (rest a) (rest target) (inc i))
-                           (recur (rest a) b (inc i)))
-                         :else -1)))))
-  (subsequence ([a start]
-                  (subvec (vec a) start))
-               ([a start end]
-                  (subvec (vec a) start end)))
-  (concatinate [a b]
-               (concat a b))
-
-  java.lang.String
-  (common-prefix [^String a ^String b]
-                 (let [i (FastStringOps/commonPrefix a b)]
-                   [i (.substring a i) (.substring b i)]))
-  (common-suffix [^String a ^String b]
-                 (let [i (FastStringOps/commonSuffix a b)]
-                   [i
-                    (.substring a 0 (- (.length a) i))
-                    (.substring b 0 (- (.length b) i))]))
-  (index-of ([^String a ^String b]
-               (.indexOf a b))
-            ([^String a ^String b ^Integer start]
-               (.indexOf a b start)))
-  (subsequence ([^String a ^Integer start]
-                  (.substring a start))
-               ([^String a ^Integer start ^Integer end]
-                  (.substring a start end)))
-  (concatinate [^String a ^String b]
-               (str a b)))
+(defn common-suffix [^String a ^String b]
+  (let [i (FastStringOps/commonSuffix a b)]
+    [i
+     (.substring a 0 (- (.length a) i))
+     (.substring b 0 (- (.length b) i))]))
 
 (defn- short-within-long
   "Return a diff if the shorter sequence exists in the longer one. No need to
   use the expensive diff algorithm for this."
-  [a b ca cb]
+  [^String a ^String b ^Integer ca ^Integer cb]
   (let [[short long] (if (> ca cb) [b a] [a b])
-        i (int (index-of long short))]
+        i (int (.indexOf long short))]
     (if (= i -1)
       nil
       (if (= short a)
         {:+ (filter #(not (nil? %))
                     [(when (> i 0)
-                       (vec (concat [-1] (seq (subsequence b 0 i)))))
+                       (vec (concat [-1] (seq (.substring b 0 i)))))
                      (when (< (+ i ca) cb)
                        (vec (concat [(dec (+ i ca))]
-                                    (seq (subsequence b (+ i ca))))))])
+                                    (seq (.substring b (+ i ca))))))])
          :- []}
         {:+ []
          :- (vec (concat (range 0 i)
                          (range (+ i cb) ca)))}))))
 
-(defn- half-match* [long short i]
-  (let [target (subsequence long i (+ i (quot (count long) 4)))]
-    (loop [j (index-of short target 0)
+(defn- half-match* [^String long ^String short ^Integer i]
+  (let [target (.substring long i (+ i (quot (count long) 4)))]
+    (loop [j (.indexOf short target 0)
            result []]
       (if (= j -1)
         (if (>= (count (or (first result) ""))
                 (quot (count long) 2))
           result
           nil)
-        (let [prefix-length (first (common-prefix (subsequence long i)
-                                                  (subsequence short j)))
-              suffix-length (first (common-suffix (subsequence long 0 i)
-                                                  (subsequence short 0 j)))
+        (let [prefix-length (first (common-prefix (.substring long i)
+                                                  (.substring short j)))
+              suffix-length (first (common-suffix (.substring long 0 i)
+                                                  (.substring short 0 j)))
               common (or (first result) "")]
-          (recur (index-of short target (inc j))
+          (recur (.indexOf short target (inc j))
                  (if (< (count common) (+ prefix-length suffix-length))
-                   [(concatinate (subsequence short (- j suffix-length) j)
-                                 (subsequence short j (+ j prefix-length)))
-                    (subsequence long 0 (- i suffix-length))
-                    (subsequence long (+ i prefix-length))
-                    (subsequence short 0 (- j suffix-length))
-                    (subsequence short (+ j prefix-length))]
+                   [(str (.substring short (- j suffix-length) j)
+                         (.substring short j (+ j prefix-length)))
+                    (.substring long 0 (- i suffix-length))
+                    (.substring long (+ i prefix-length))
+                    (.substring short 0 (- j suffix-length))
+                    (.substring short (+ j prefix-length))]
                    result)))))))
 
 (defn- half-match
-  "Find a subsequence shared by both sequences which is at least half as long
+  "Find a substring shared by both sequences which is at least half as long
   as the longer sequence. Return a vector of five elements if one is found and
   and nil if not. The five elements are: the common sequence, the prefix
   of sequence a, the suffix of sequence a, the prefix of sequence b and the
   suffix of sequence b."
-  [a b]
+  [^String a ^String b]
   (let [[short long] (if (> (count a) (count b)) [b a] [a b])
         short-count (count short)
         long-count (count long)]
@@ -160,7 +98,7 @@
   algorithm is required. At this point we know that a and b are different at
   both ends. A diff can be calculated manually if the length of a or b is 0
   or if the smaller of the two sequences is contained within the longer."
-  [a b f]
+  [^String a ^String b f]
   (let [ca (count a)
         cb (count b)]
     (or (cond (= ca 0) {:+ [(vec (concat [-1] (seq b)))]
@@ -188,7 +126,7 @@
 (defn diff
   "Return the diff of a and b. Wrap the diff function f in pre and post
   optimizations. Check for nil and equality. Remove common prefix and suffix."
-  [a b f]
+  [^String a ^String b f]
   (let [diffs (cond (or (nil? a) (nil? b))
                     (throw (IllegalArgumentException. "Cannot diff nil."))
                     (= a b) {:+ [] :- []}

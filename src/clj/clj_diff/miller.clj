@@ -193,16 +193,25 @@
            :- []}
           edits))
 
-(defn diff
+(defn seq-diff
+  [a b]
+  (let [a (vec (cons nil a))
+        b (vec (cons nil b))
+        [a* b*] (if (> (count b) (count a)) [b a] [a b])
+        edits (diff* a* b*)]
+    (edits->script b edits (if (= a* a) identity transpose))))
+
+(defmulti ^{:arglists '([a b])} diff
   "Create an edit script that may be used to transform a into b. See doc string
   for clj-diff.core/diff. This function will ensure that diff* is called with
   arguments a and b where a >= b. If the passed values of a and b need to be
   swapped then the resulting path with will transposed."
+  (fn [a b] (when (and (string? a) (string? b)) :string)))
+
+(defmethod diff :default
   [a b]
-  (opt/diff a b
-            (fn [a b]
-              (let [a (vec (cons nil a))
-                    b (vec (cons nil b))
-                    [a* b*] (if (> (count b) (count a)) [b a] [a b])
-                    edits (diff* a* b*)]
-                (edits->script b edits (if (= a* a) identity transpose))))))
+  (seq-diff a b))
+
+(defmethod diff :string
+  [a b]
+  (opt/diff a b seq-diff))
