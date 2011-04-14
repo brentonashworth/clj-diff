@@ -87,9 +87,11 @@
 
 (deftest levenshtein-distance-test
   (are [a b d] (= (levenshtein-distance a b) d)
+       "aba" "aba" 0
        "aba" "ada" 1
+       "abca" "aca" 1
+       "abma" "aca" 2
        "kitten" "sitting" 3
        "Saturday" "Sunday" 3
        "gumbo" "gambol" 2
-       ;; The correct distance for the following is 28
-       "nBP8GaFHVls2dI8h9aK1FWdRgevf43" "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v" 30))
+       "nBP8GaFHVls2dI8h9aK1FWdRgevf43" "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v" 28))

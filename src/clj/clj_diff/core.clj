@@ -1,6 +1,6 @@
 (ns clj-diff.core
   "Diff, patch and related functions for Clojure sequences."
-  (:require [clj-diff [miller :as miller]]))
+  (:require [clj-diff [miller-ld :as miller]]))
 
 (defn diff
   "Create the edit script for transforming sequance a into sequence b.
@@ -13,7 +13,7 @@
   For example: the diff of 'abcabba' and 'cbabac' would generate the edit
   script below.
 
-  {:+ [[2 b] [6 c]], :- [0 1 5]}
+      {:+ [[2 b] [6 c]], :- [0 1 5]}
 
   An index of -1 may appear in additions and is a special case which means to
   add the elements at the beginning of the sequence."
@@ -69,11 +69,16 @@
      (+ (count (:- edit-script))
         (reduce + (map #(count (drop 1 %)) (:+ edit-script))))))
 
+(defn- max-or-zero [coll]
+  (if (seq coll)
+    (apply max coll)
+    0))
+
 (defn levenshtein-distance
   "Returns the Levenshtein distance between two sequences. May either be passed
   the two sequences or a diff of the two sequences.
 
-  From http://en.wikipedia.org/wiki/Levenshtein_distance:
+  From [Wikipedia](http://en.wikipedia.org/wiki/Levenshtein_distance):
   The Levenshtein distance between two strings is the minimum number of edits
   needed to transform one string into the other, with the allowable edit
   operations being insertion, deletion and substitution of a single character.
@@ -94,8 +99,8 @@
                                  items (rest %)]
                              (apply vector index (repeat (count items) :a)))
                           (:+ edit-script))
-           max-index (max (apply max (map first additions))
-                          (apply max (:- edit-script)))
+           max-index (max (max-or-zero (map first additions))
+                          (max-or-zero (:- edit-script)))
            v (vec (repeat max-index :e))
            patched (merge-patch v (merge edit-script {:+ additions}) :d)
            edit-groups (filter #(not= :e (first %))
