@@ -64,7 +64,7 @@
   passed an edit script. The edit distance is the minimum number of insertions
   and deletions required to transform one sequence into another."
   ([a b]
-     (edit-distance (diff a b)))
+     (miller/edit-distance a b))
   ([edit-script]
      (+ (count (:- edit-script))
         (reduce + (map #(count (drop 1 %)) (:+ edit-script))))))
