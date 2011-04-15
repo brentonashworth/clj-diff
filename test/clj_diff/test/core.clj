@@ -95,3 +95,21 @@
        "Saturday" "Sunday" 3
        "gumbo" "gambol" 2
        "nBP8GaFHVls2dI8h9aK1FWdRgevf43" "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v" 28))
+
+(deftest longest-common-subseq-test
+  (are [a b _ d] (= (longest-common-subseq a b) d)
+       "aba" "aba"         => "aba"
+       "aba" "ada"         => "aa"
+       "abca" "aca"        => "aca"
+       "abma" "aca"        => "aa"
+       "kitten" "sitting"  => "ittn"
+       "Saturday" "Sunday" => "Suday"
+       "gumbo" "gambol"    => "gmbo"
+       "nBP8GaFHVls2dI8h9aK1FWdRgevf43" "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v" =>
+       "BPs89Kv"))
+
+(deftest longest-common-subseq-seq-test
+  (are [a b _ d] (= (longest-common-subseq (seq a) (seq b)) d)
+       "kitten" "sitting"  => [\i \t \t \n]
+       "Saturday" "Sunday" => [\S \u \d \a \y]
+       "gumbo" "gambol"    => [\g \m \b \o]))

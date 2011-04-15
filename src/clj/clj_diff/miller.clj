@@ -242,3 +242,23 @@
 (defmethod edit-distance :string
   [a b]
   (opt/diff a b seq-edit-dist))
+
+(defn seq-lcs
+  [a b]
+  (let [diff (seq-diff a b)
+        deletions (:- diff)]
+    (filter #(not= % ::d)
+            (reduce (fn [coll next]
+                      (assoc coll next ::d))
+                    (vec (seq a))
+                    deletions))))
+
+(defmulti longest-common-subseq string-dispatch)
+
+(defmethod longest-common-subseq :default
+  [a b]
+  (seq-lcs a b))
+
+(defmethod longest-common-subseq :string
+  [a b]
+  (apply str (seq-lcs a b)))

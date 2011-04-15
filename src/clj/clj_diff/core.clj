@@ -110,3 +110,6 @@
                         (max (count (filter #(= % :a) group))
                              (count (filter #(= % :d) group))))
                       edit-groups)))))
+
+(defn longest-common-subseq [a b]
+  (miller/longest-common-subseq a b))
