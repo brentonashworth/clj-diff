@@ -1,7 +1,7 @@
 (ns clj-diff.test.miller
   (:use [clj-diff.miller]
-        [clj-diff [core :only (edit-distance patch)]])
-  (:use [clojure.test]))
+        [clojure.test])
+  (:require [clj-diff [core :as core]]))
 
 (def a1 (vec (cons nil "acebdabbabed")))
 (def b1 (vec (cons nil "acbdeacbed")))
@@ -81,6 +81,10 @@
     (is (= (t  -1 {      0 2}) 2))
     (is (= (t   0 {-1 2, 0 2}) 3))
     (is (= (t  -2 {-1 2, 0 3}) 3))))
+
+(deftest p-band-diagonals-test
+  (let [t #'clj-diff.miller/p-band-diagonals]
+    (is (= (t 0 2) [0 1 2]))))
 
 (deftest search-p-band-test
   (let [n (dec (count a1))
@@ -326,7 +330,7 @@
            {:+ [[1 \e] [3 \a \b \b]] :- [4 6]}))))
 
 (deftest diff-test
-  (let [t (fn [a b] (edit-distance (diff a b)))]
+  (let [t (fn [a b] (core/edit-distance (diff a b)))]
     (are [a b _ d] (= (t a b) d)
          "acebdabbabed"          "acbdeacbed"        :=> 6
          "acbdeacbed"            "acebdabbabed"      :=> 6
@@ -340,7 +344,7 @@
 
 (deftest roundtrip
   (are [a b]
-       (= b (patch a (diff a b)))
+       (= b (core/patch a (diff a b)))
        
        "aba" "aca"
        "abcabba" "cbabac"

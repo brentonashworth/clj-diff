@@ -28,6 +28,13 @@
         (recur (inc x) (inc y))
         x))))
 
+(defn- p-band-diagonals
+  "Given a p value and a delta, return all diagonals in this p-band."
+  [p delta]
+  (concat (range (* -1 p) delta)
+          (reverse (range (inc delta) (+ delta (inc p))))
+          [delta]))
+
 (defn- search-p-band
   "Given a p value, search all diagonals in the p-band for the furthest
   reaching endpoints. Record the furthest reaching endpoint for each p value
@@ -38,9 +45,7 @@
   (reduce (fn [fp next-k]
             (assoc fp next-k (snake a b n m next-k fp)))
           fp
-          (concat (range (* -1 p) delta)
-                  (reverse (range (inc delta) (+ delta (inc p))))
-                  [delta])))
+          (p-band-diagonals p delta)))
 
 (defn ses
   "Find the size of the shortest edit script (ses). Returns a 3-tuple of the
@@ -129,6 +134,9 @@
       x
       (recur (dec x) (dec y)))))
 
+;; See the paper for an example of how there are multiple shortest
+;; paths though an edit graph.
+
 (defn- next-edit
   "Find the next move through the edit graph which will decrease the
   edit distance by 1."
@@ -158,13 +166,6 @@
         (let [next (next-fn (:p prev) (:x prev) (:k prev))]
           (recur (conj edits next) next))))))
 
-(defn- diff*
-  "Calculate the sequence of edits required to transform a into b  using the
-  miller algorithm. This algorithm requires that a >= b."
-  [a b]
-  {:pre [(>= (count a) (count b))]}
-  (apply edits a b (ses a b)))
-
 (defn- transpose
   "If a is shorter than b, then the diff is calculated from b to a and this
   function is used to transpose the results into a diff from a to b."
@@ -193,20 +194,30 @@
            :- []}
           edits))
 
+(defn vectorize [& more]
+  (map #(vec (cons nil %)) more))
+
+(defn order->ses
+  [a b]
+  (let [[a* b*] (if (> (count b) (count a)) [b a] [a b])]
+    [(ses a* b*) a* b*]))
+
 (defn seq-diff
   [a b]
-  (let [a (vec (cons nil a))
-        b (vec (cons nil b))
-        [a* b*] (if (> (count b) (count a)) [b a] [a b])
-        edits (diff* a* b*)]
+  (let [[a b] (vectorize a b)
+        [es a* b*] (order->ses a b)
+        edits (apply edits a* b* es)]
     (edits->script b edits (if (= a* a) identity transpose))))
+
+(defn string-dispatch [a b]
+  (when (and (string? a) (string? b)) :string))
 
 (defmulti ^{:arglists '([a b])} diff
   "Create an edit script that may be used to transform a into b. See doc string
   for clj-diff.core/diff. This function will ensure that diff* is called with
   arguments a and b where a >= b. If the passed values of a and b need to be
   swapped then the resulting path with will transposed."
-  (fn [a b] (when (and (string? a) (string? b)) :string)))
+  string-dispatch)
 
 (defmethod diff :default
   [a b]
@@ -215,3 +226,19 @@
 (defmethod diff :string
   [a b]
   (opt/diff a b seq-diff))
+
+(defn seq-edit-dist
+  [a b]
+  (let [[a b] (vectorize a b)
+        [[p & more] a* b*] (order->ses a b)]
+    (+ (* 2 p) (- (count a*) (count b*)))))
+
+(defmulti edit-distance string-dispatch)
+
+(defmethod edit-distance :default
+  [a b]
+  (seq-edit-dist a b))
+
+(defmethod edit-distance :string
+  [a b]
+  (opt/diff a b seq-edit-dist))

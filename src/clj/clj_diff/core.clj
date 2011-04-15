@@ -1,6 +1,6 @@
 (ns clj-diff.core
   "Diff, patch and related functions for Clojure sequences."
-  (:require [clj-diff [miller-ld :as miller]]))
+  (:require [clj-diff [miller :as miller]]))
 
 (defn diff
   "Create the edit script for transforming sequance a into sequence b.
