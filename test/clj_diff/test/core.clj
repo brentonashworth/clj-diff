@@ -113,3 +113,8 @@
        "kitten" "sitting"  => [\i \t \t \n]
        "Saturday" "Sunday" => [\S \u \d \a \y]
        "gumbo" "gambol"    => [\g \m \b \o]))
+
+(deftest longest-common-subseq-clojure-test
+  (are [a b _ d] (= (longest-common-subseq (seq a) (seq b)) d)
+       [:k :i :t :t :e :n] [:s :i :t :t :i :n :g] => [:i :t :t :n]
+       [:s :a :t :u :r :d :a :y] [:s :u :n :d :a :y] => [:s :u :d :a :y]))
