@@ -88,6 +88,6 @@ h3. Version 2.0
 
 h2. License
 
-Copyright (C) 2010 Brenton Ashworth
+Copyright (C) 2010-2011 Brenton Ashworth
 
 Distributed under the Eclipse Public License, the same as Clojure uses. See the file COPYING.
