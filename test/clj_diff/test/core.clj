@@ -117,4 +117,7 @@
 (deftest longest-common-subseq-clojure-test
   (are [a b _ d] (= (longest-common-subseq (seq a) (seq b)) d)
        [:k :i :t :t :e :n] [:s :i :t :t :i :n :g] => [:i :t :t :n]
-       [:s :a :t :u :r :d :a :y] [:s :u :n :d :a :y] => [:s :u :d :a :y]))
+       [:s :a :t :u :r :d :a :y] [:s :u :n :d :a :y] => [:s :u :d :a :y]
+       [{:x 1 :y 3} {:x 2 :y 7} {:x 3 :y 2} {:x 8 :y 3}]
+       [{:x 5 :y 3} {:x 1 :y 3} {:x 3 :y 2} {:x 2 :y 8} {:x 8 :y 3}] =>
+       [{:x 1 :y 3} {:x 3 :y 2} {:x 8 :y 3}]))
