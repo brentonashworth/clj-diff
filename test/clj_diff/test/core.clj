@@ -79,7 +79,11 @@
 (deftest edit-distance-test
   (is (= (edit-distance (diff "aba" "aca"))
          2))
+  (is (= (edit-distance "aba" "aca")
+         2))
   (is (= (edit-distance (diff "abcabba" "cbabac"))
+         5))
+  (is (= (edit-distance "abcabba" "cbabac")
          5))
   (is (= (edit-distance (diff "nBP8GaFHVls2dI8h9aK1FWdRgevf43"
                               "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v"))

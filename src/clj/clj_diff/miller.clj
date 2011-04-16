@@ -71,7 +71,7 @@
 ;; Build the edit script from the map of farthest endpoints.
 ;;
 
-(defn- edit-dist
+(defn edit-dist
   "Given a delta, p and k value, calculate the edit distance."
   [delta p k]
   (if (> k delta)
@@ -135,7 +135,7 @@
       (recur (dec x) (dec y)))))
 
 ;; See the paper for an example of how there are multiple shortest
-;; paths though an edit graph.
+;; paths through an edit graph.
 
 (defn- next-edit
   "Find the next move through the edit graph which will decrease the
@@ -145,7 +145,7 @@
   (let [d (edit-dist delta p k)
         head-x (backtrack-snake a b x (- x k))]
     (loop [head-x head-x]
-      (let [move (first (filter #(and (not (nil? %))
+      (let [move (first (filter #(and (not (nil? %)) ;; <<<===
                                       (= (:d %) (dec d)))
                                 (map #(% graph delta p head-x k)
                                      [look-left look-up])))]
@@ -239,9 +239,11 @@
   [a b]
   (seq-edit-dist a b))
 
+;; TODO - Modify optimizations so that it can be used here and with
+;; longest-common-subseq
 (defmethod edit-distance :string
   [a b]
-  (opt/diff a b seq-edit-dist))
+  (seq-edit-dist a b))
 
 (defn seq-lcs
   [a b]
