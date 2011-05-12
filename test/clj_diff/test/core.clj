@@ -58,7 +58,7 @@
           {:+ [[0 \9 \2 \5]
                [1 \C]
                [9 \c \Y \h \T \5 \h]
-               [15 \L] 
+               [15 \L]
                [17 \T \3]
                [28 \2 \T \5 \C \7 \U]
                [29 \L \z \5 \v]]
@@ -68,7 +68,7 @@
 (deftest roundtrip
   (are [a b]
        (= b (patch a (diff a b)))
-       
+
        "aba" "aca"
        "abcabba" "cbabac"
        "FWdRgevf43" "T5C7U3Lz5v"
@@ -98,7 +98,8 @@
        "kitten" "sitting" 3
        "Saturday" "Sunday" 3
        "gumbo" "gambol" 2
-       "nBP8GaFHVls2dI8h9aK1FWdRgevf43" "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v" 28))
+       "nBP8GaFHVls2dI8h9aK1FWdRgevf43" "925BCPcYhT5hs8L9T3K2T5C7U3Lz5v" 28
+       [1 2 4] [1 2 4 3] 1))
 
 (deftest longest-common-subseq-test
   (are [a b _ d] (= (longest-common-subseq a b) d)
