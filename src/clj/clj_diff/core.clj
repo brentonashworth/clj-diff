@@ -70,7 +70,8 @@
         (reduce + (map #(count (drop 1 %)) (:+ edit-script))))))
 
 (defn- max-or-zero [coll]
-  (if (seq coll)
+  (if (and (coll? coll)
+           (not (empty? coll)))
     (apply max coll)
     0))
 
