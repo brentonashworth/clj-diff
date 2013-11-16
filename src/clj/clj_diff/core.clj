@@ -84,14 +84,14 @@
   needed to transform one string into the other, with the allowable edit
   operations being insertion, deletion and substitution of a single character.
 
-  This function works not only with strings but with any Clojure sequence.
+  This function works, not only with strings, but with any Clojure sequence.
 
-  Warning! Technically this function is estimating the Levenshtein distance
+  Warning! Technically, this function is estimating the Levenshtein distance
   from a computed diff. Most of the time, it is the same as the real Levenshtein
-  distance but in same cases it may be larger. The reason for this is that
-  there may be multiple paths through an edit graph with the same edit
-  distance but with differing Levenshtein distance. A future improvement to
-  the diff algorithm whould be to find all paths and prefer the one with the
+  distance, but in same cases it may be larger. The reason for this is that
+  there may be multiple paths through an edit graph, with the same edit
+  distance, but with differing Levenshtein distance. A future improvement to
+  the diff algorithm would be to find all paths, and prefer the one with the
   minimum Levenshtein distance."
   ([a b]
      (levenshtein-distance (diff a b)))
