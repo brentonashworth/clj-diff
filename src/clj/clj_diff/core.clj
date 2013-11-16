@@ -45,7 +45,7 @@
 
 (defmulti ^{:arglists '([s edit-script])} patch
   "Use the instructions in the edit script to transform the sequence s into
-  a new sequence. If the edit script was created by using diff on a and b then
+  a new sequence. If the edit script was created by using diff on a and b, then
   patch will use the edit script to transform a into b.
 
   (diff a b) -> x, (patch a x) -> b."
