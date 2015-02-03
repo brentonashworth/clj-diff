@@ -3,6 +3,7 @@
    Sun Wu, Udi Manber, Gene Myers and Web Miller.
 
    Please refer to the above paper while reading this code."
+  #+clj
   (:require [clj-diff [optimizations :as opt]]))
 
 (defn- next-x
@@ -223,6 +224,7 @@
   [a b]
   (seq-diff a b))
 
+#+clj
 (defmethod diff :string
   [a b]
   (opt/diff a b seq-diff))
