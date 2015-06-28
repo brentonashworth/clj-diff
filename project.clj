@@ -1,8 +1,6 @@
 (defproject clj-diff "1.1.0-SNAPSHOT"
   :description "Sequential diff in Clojure/Script."
   :url "http://github.com/rymndhng/clj-diff"
-  :source-paths ["target/classes" "src/clj"]
-  :test-paths ["target/test-classes"]
   :auto-clean false
   :java-source-paths ["src/jvm"]
   :jar-exclusions [#"\.swp|\.swo|\.DS_Store|\.class"]
@@ -16,7 +14,7 @@
                              [lein-cljsbuild "1.0.6"]]
                    :aliases {"cleantest" ["do" "clean," "once," "test," "cljsbuild" "test"]
                              "jar" ["do" "clean," "once," "jar"]
-                             "deploy" ["do" "clean," "cljx" "deploy" "clojars"]}}}
+                             "deploy" ["do" "clean," "deploy" "clojars"]}}}
 
   :cljsbuild {:builds
               {:test {:source-paths ["target/classes" "target/test-classes"]

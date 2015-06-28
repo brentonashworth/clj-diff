@@ -1,10 +1,10 @@
 (ns clj-diff.test.core
   (:use [clj-diff.core :only (diff patch edit-distance
                                levenshtein-distance longest-common-subseq)])
-  (:require #+cljs [cemerick.cljs.test :as t]
-            #+clj  [clojure.test :as t])
-  #+cljs
-  (:require-macros [cemerick.cljs.test :as t]))
+
+  #?@(:clj  [(:require [clojure.test :as t])]
+      :cljs [(:require [cemerick.cljs.test :as t])
+             (:require-macros [cemerick.cljs.test :as t])]))
 
 (t/deftest diff-test
   (let [t (fn [a b] (edit-distance (diff a b)))]
