@@ -5,3 +5,9 @@ classes
 *.png
 files
 docs/
+target/
+
+.lein-failures
+.lein-repl-history
+.nrepl-port
+*-init.clj
