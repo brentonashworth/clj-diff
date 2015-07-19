@@ -3,7 +3,7 @@
    Sun Wu, Udi Manber, Gene Myers and Web Miller.
 
    Please refer to the above paper while reading this code."
-  (:require [clj-diff [optimizations :as opt]]))
+  #?(:clj (:require [clj-diff [optimizations :as opt]])))
 
 (defn- next-x
   "Get the next farthest x value by looking at previous farthest values on the
@@ -223,9 +223,10 @@
   [a b]
   (seq-diff a b))
 
+#?(:clj
 (defmethod diff :string
   [a b]
-  (opt/diff a b seq-diff))
+  (opt/diff a b seq-diff)))
 
 (defn seq-edit-dist
   [a b]
