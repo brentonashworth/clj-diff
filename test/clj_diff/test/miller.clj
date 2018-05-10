@@ -345,7 +345,7 @@
 (deftest roundtrip
   (are [a b]
        (= b (core/patch a (diff a b)))
-       
+
        "aba" "aca"
        "abcabba" "cbabac"
        "acebdabbabed" "acbdeacbed"

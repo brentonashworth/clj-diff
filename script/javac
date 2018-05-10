@@ -1,7 +1,0 @@
-rm -rf classes
-cd src/jvm
-javac clj_diff/FastStringOps.java
-cd ../../
-mkdir classes
-mkdir classes/clj_diff
-mv src/jvm/clj_diff/FastStringOps.class classes/clj_diff
