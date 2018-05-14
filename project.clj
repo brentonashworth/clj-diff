@@ -1,4 +1,4 @@
-(defproject tech.droit/clj-diff "1.0.0-SNAPSHOT"
+(defproject tech.droit/clj-diff "1.0.0"
   :description "Sequential diff in Clojure."
   :url "http://github.com/droitfintech/clj-diff"
   :source-paths ["src/clj"]
