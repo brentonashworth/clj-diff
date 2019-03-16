@@ -6,6 +6,12 @@
   (let [t (fn [a b] (edit-distance (diff a b)))]
     (is (= (t [1 2 3 4 3 2 3 2 1 2 3] [2 3 1 2 3 4 5 4 3])
            10))
+    (is (= (t [nil 1 2] [1 2])
+           1))
+    (is (= (t [1 2] [nil 1 2])
+           1))
+    (is (= (t [nil 1 2] [nil 1 2])
+           0))
     (is (= (t "abcab" "cbab")
            3))
     (is (= (t "abcabba" "cbabac")
@@ -69,6 +75,8 @@
   (are [a b]
        (= b (patch a (diff a b)))
 
+       [nil 42] [42]
+       [42] [42 nil]
        "aba" "aca"
        "abcabba" "cbabac"
        "FWdRgevf43" "T5C7U3Lz5v"
