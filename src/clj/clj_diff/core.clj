@@ -41,7 +41,7 @@
 
 (defn patch*
   [s edit-script]
-  (filter #(not (nil? %)) (merge-patch s edit-script nil)))
+  (filter #(not (= ::delete-sentinel %)) (merge-patch s edit-script ::delete-sentinel)))
 
 (defmulti ^{:arglists '([s edit-script])} patch
   "Use the instructions in the edit script to transform the sequence s into
