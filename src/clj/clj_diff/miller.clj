@@ -145,7 +145,7 @@
   (let [d (edit-dist delta p k)
         head-x (backtrack-snake a b x (- x k))]
     (loop [head-x head-x]
-      (let [move (first (filter #(and (not (nil? %)) ;; <<<===
+      (let [move (first (filter #(and (not (= ::sentinel %)) ;; <<<===
                                       (= (:d %) (dec d)))
                                 (map #(% graph delta p head-x k)
                                      [look-left look-up])))]
@@ -195,7 +195,7 @@
           edits))
 
 (defn vectorize [& more]
-  (map #(vec (cons nil %)) more))
+  (map #(vec (cons ::sentinel %)) more))
 
 (defn order->ses
   [a b]
