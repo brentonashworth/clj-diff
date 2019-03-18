@@ -1,5 +1,7 @@
 h1. clj-diff
 
+<code>[tech.droit/clj-diff "1.0.1"]</code>
+
 Provides <code>diff</code> and <code>patch</code> functions for Clojure sequences where <code>(diff a b) -> x</code> and <code>(patch a x) -> b</code>. Also provides <code>edit-distance</code> and <code>levenshtein-distance</code> functions for calculating the difference between two sequences.
 
 h2. Usage
@@ -41,16 +43,16 @@ h2. Installation
 
 h3. Leiningen
 
-Add <code>[clj-diff "1.0.0-SNAPSHOT"]</code> to your :dependencies in project.clj.
+Add <code>[tech.droit/clj-diff "1.0.1"]</code> to your :dependencies in project.clj.
 
 h3. Maven
 
 Add the following dependency:
 
 <pre><code><dependency>
-  <groupId>clj-diff</groupId>
+  <groupId>tech.droit</groupId>
   <artifactId>clj-diff</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.1</version>
 </dependency></code></pre>
 
 ...which comes from Clojars...
