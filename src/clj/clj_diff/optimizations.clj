@@ -17,7 +17,7 @@
   "Return a diff if the shorter sequence exists in the longer one. No need to
   use the expensive diff algorithm for this."
   [^String a ^String b ^Integer ca ^Integer cb]
-  (let [[short long] (if (> ca cb) [b a] [a b])
+  (let [[^String short ^String long] (if (> ca cb) [b a] [a b])
         i (int (.indexOf long short))]
     (if (= i -1)
       nil
@@ -34,7 +34,7 @@
                          (range (+ i cb) ca)))}))))
 
 (defn- half-match* [^String long ^String short ^Integer i]
-  (let [target (.substring long i (+ i (quot (count long) 4)))]
+  (let [^String target (.substring long i (+ i (quot (count long) 4)))]
     (loop [j (.indexOf short target 0)
            result []]
       (if (= j -1)
