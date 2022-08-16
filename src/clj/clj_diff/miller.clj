@@ -144,9 +144,10 @@
 
 (defn- backtrack-snake
   "Find the x value at the head of the longest snake ending at (x, y)."
-  [a b x y opts]
+  [a b x y & [opts]]
   {:pre [(and (>= x 0) (>= y 0))]}
-  (let [compare (or (:compare opts) =)]
+  (let [opts    (or opts {})
+        compare (or (:compare opts) =)]
     (loop [x x
            y y]
       (if (or (= x y 0) (not (compare (fast/val-at a x) (fast/val-at b y))))
