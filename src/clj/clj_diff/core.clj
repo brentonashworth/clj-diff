@@ -43,9 +43,7 @@
       #(if (vector? %)
          %
          [%])
-      s)
-
-    #_(apply concat s)))
+      s)))
 
 (defn patch*
   [s edit-script]
