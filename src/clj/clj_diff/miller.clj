@@ -3,28 +3,36 @@
    Sun Wu, Udi Manber, Gene Myers and Web Miller.
 
    Please refer to the above paper while reading this code."
-  (:require [clj-diff [optimizations :as opt]]))
+  (:require [clj-diff [optimizations :as opt]]
+            [clj-fast.core :as fast]))
 
 (defn- next-x
   "Get the next farthest x value by looking at previous farthest values on the
   diagonal above and below diagonal k. Choose the greater of the farthest x on
   the above diagonal and the farthest x on the diagonal below plus one. fp is
   a map of diagonals => farthest points."
-  [k fp]
-  (max (inc (get fp (dec k) -1))
-       (get fp (inc k) -1)))
+  [^long k fp]
+  (max (inc (fast/val-at fp (dec k) -1))
+       (fast/val-at fp (inc k) -1)))
 
 (defn- snake
   "Starting at the farthest point on diagonal k, return the x value of the
   point at the end of the longest snake on this diagonal. A snake is a
   sequence of diagonal moves connecting match points on the edit graph."
-  [a b n m k fp]
+  [a b n m k fp & [opts]]
   {:pre [(and (vector? a) (vector? b))]}
-  (let [x (next-x k fp)
-        y (- x k)]
+  (let [opts (or opts {})
+        compare (or (:compare opts)
+                    (fn [a b]
+                      (or
+                        (and (string? a) (string? b)
+                             (.equals ^String a ^String b))
+                        (= a b))))
+        x       (next-x k fp)
+        y       (- x k)]
     (loop [x x
            y y]
-      (if (and (< x n) (< y m) (= (get a (inc x)) (get b (inc y))))
+      (if (and (< x n) (< y m) (compare (fast/val-at a (inc x)) (fast/val-at b (inc y))))
         (recur (inc x) (inc y))
         x))))
 
@@ -41,31 +49,41 @@
   in the map fp. Returns an updated fp map for p. a and b are the two
   sequences and n and m are their lengths respectively. delta is the
   diagonal of the sink and is equal to n - m."
-  [a b n m delta p fp]
-  (reduce (fn [fp next-k]
-            (assoc fp next-k (snake a b n m next-k fp)))
-          fp
-          (p-band-diagonals p delta)))
+  [a b n m delta p fp & [opts]]
+  (let [opts (or opts {})]
+    (persistent! (reduce (fn [fp next-k]
+                           (assoc! fp next-k (snake a b n m next-k fp opts)))
+                   (transient fp)
+                   (p-band-diagonals p delta)))))
 
 (defn ses
   "Find the size of the shortest edit script (ses). Returns a 3-tuple of the
   size of the ses, the delta value (which is the diagonal of the sink)
   and the fp map. The optimal path from source to sink can be constructed from
   this information."
-  [a b]
+  [a b & [opts]]
   {:pre [(>= (count a) (count b))]}
-  (let [n (dec (count a))
-        m (dec (count b))
-        delta (- n m)]
-    (loop [p 0
+  (let [opts (or opts {})
+        limit-p (:limit-p opts)
+        n       (dec (count a))
+        m       (dec (count b))
+        delta   (- n m)]
+    (loop [p  0
            fp {}]
-      (if (= (-> (get fp (dec p) {})
-                 (get delta))
-             n)
-        [(dec p) delta fp]
-        (recur (inc p)
-               (assoc fp p
-                      (search-p-band a b n m delta p (get fp (dec p) {}))))))))
+
+      (cond
+        (and limit-p
+             (> p limit-p))
+        #_=> [-1 delta fp]
+
+        (= (-> (fast/val-at fp (dec p) {})
+               (fast/val-at delta))
+           n)
+        #_=> [(dec p) delta fp]
+
+        :else #_=> (recur (inc p)
+                          (fast/fast-assoc fp p
+                                           (search-p-band a b n m delta p (fast/val-at fp (dec p) {}) opts)))))))
 
 ;;
 ;; Build the edit script from the map of farthest endpoints.
@@ -126,13 +144,15 @@
 
 (defn- backtrack-snake
   "Find the x value at the head of the longest snake ending at (x, y)."
-  [a b x y]
+  [a b x y & [opts]]
   {:pre [(and (>= x 0) (>= y 0))]}
-  (loop [x x
-         y y]
-    (if (or (= x y 0) (not (= (get a x) (get b y))))
-      x
-      (recur (dec x) (dec y)))))
+  (let [opts    (or opts {})
+        compare (or (:compare opts) =)]
+    (loop [x x
+           y y]
+      (if (or (= x y 0) (not (compare (fast/val-at a x) (fast/val-at b y))))
+        x
+        (recur (dec x) (dec y))))))
 
 ;; See the paper for an example of how there are multiple shortest
 ;; paths through an edit graph.
@@ -140,7 +160,7 @@
 (defn- next-edit
   "Find the next move through the edit graph which will decrease the
   edit distance by 1."
-  [a b graph delta p x k]
+  [opts a b graph delta p x k]
   {:post [(= (dec (edit-dist delta p k)) (:d %))]}
   (let [d (edit-dist delta p k)
         head-x (backtrack-snake a b x (- x k))]
@@ -156,8 +176,8 @@
 (defn- edits
   "Calculate the sequence of edits from the map of farthest reaching end
   points."
-  [a b p delta graph]
-  (let [next-fn (partial next-edit a b graph delta)]
+  [opts a b p delta graph]
+  (let [next-fn (partial next-edit opts a b graph delta)]
     (loop [edits '()
            prev {:x (count a) :p p :k delta
                  :d (edit-dist delta p delta)}]
@@ -171,9 +191,9 @@
   function is used to transpose the results into a diff from a to b."
   [edit]
   (-> edit
-      (assoc :edit (if (= :insert (:edit edit)) :delete :insert))
-      (assoc :x (- (:x edit) (:k edit)))
-      (assoc :k (- (:k edit)))))
+      (fast/fast-assoc :edit (if (= :insert (:edit edit)) :delete :insert))
+      (fast/fast-assoc :x (- (:x edit) (:k edit)))
+      (fast/fast-assoc :k (- (:k edit)))))
 
 (defn- edits->script
   "Convert a sequence of edits into an edit script."
@@ -184,12 +204,12 @@
                   insertions (:+ script)
                   last-insert (last insertions)]
               (if (= edit :delete)
-                (assoc script :- (conj (:- script) x))
-                (assoc script :+ (let [index (dec x)]
-                                   (if (= index (first last-insert))
-                                     (conj (vec (butlast insertions))
-                                           (conj last-insert (get b y)))
-                                     (conj insertions [(dec x) (get b y)])))))))
+                (fast/fast-assoc script :- (conj (:- script) x))
+                (fast/fast-assoc script :+ (let [index (dec x)]
+                                             (if (= index (first last-insert))
+                                               (conj (vec (butlast insertions))
+                                                     (conj last-insert (fast/val-at b y)))
+                                               (conj insertions [(dec x) (fast/val-at b y)])))))))
           {:+ []
            :- []}
           edits))
@@ -198,18 +218,18 @@
   (map #(vec (cons ::sentinel %)) more))
 
 (defn order->ses
-  [a b]
+  [a b opts]
   (let [[a* b*] (if (> (count b) (count a)) [b a] [a b])]
-    [(ses a* b*) a* b*]))
+    [(ses a* b* opts) a* b*]))
 
 (defn seq-diff
-  [a b]
+  [opts a b]
   (let [[a b] (vectorize a b)
-        [es a* b*] (order->ses a b)
-        edits (apply edits a* b* es)]
+        [es a* b*] (order->ses a b opts)
+        edits (apply edits opts a* b* es)]
     (edits->script b edits (if (= a* a) identity transpose))))
 
-(defn string-dispatch [a b]
+(defn string-dispatch [a b & [_]]
   (when (and (string? a) (string? b)) :string))
 
 (defmulti ^{:arglists '([a b])} diff
@@ -220,47 +240,49 @@
   string-dispatch)
 
 (defmethod diff :default
-  [a b]
-  (seq-diff a b))
+  [a b opts]
+  (seq-diff opts a b))
 
 (defmethod diff :string
-  [a b]
-  (opt/diff a b seq-diff))
+  [a b opts]
+  (opt/diff a b (partial seq-diff opts)))
 
 (defn seq-edit-dist
-  [a b]
+  [a b opts]
   (let [[a b] (vectorize a b)
-        [[p & more] a* b*] (order->ses a b)]
-    (+ (* 2 p) (- (count a*) (count b*)))))
+        [[p & more] a* b*] (order->ses a b opts)]
+    (if (neg? p)
+      p
+      (+ (* 2 p) (- (count a*) (count b*))))))
 
 (defmulti edit-distance string-dispatch)
 
 (defmethod edit-distance :default
-  [a b]
-  (seq-edit-dist a b))
+  [a b opts]
+  (seq-edit-dist a b opts))
 
 ;; TODO - Modify optimizations so that it can be used here and with
 ;; longest-common-subseq
 (defmethod edit-distance :string
-  [a b]
-  (seq-edit-dist a b))
+  [a b opts]
+  (seq-edit-dist a b opts))
 
 (defn seq-lcs
-  [a b]
-  (let [diff (seq-diff a b)
+  [a b opts]
+  (let [diff      (seq-diff opts a b)
         deletions (:- diff)]
     (filter #(not= % ::d)
             (reduce (fn [coll next]
-                      (assoc coll next ::d))
+                      (fast/fast-assoc coll next ::d))
                     (vec (seq a))
                     deletions))))
 
 (defmulti longest-common-subseq string-dispatch)
 
 (defmethod longest-common-subseq :default
-  [a b]
-  (seq-lcs a b))
+  [a b opts]
+  (seq-lcs a b opts))
 
 (defmethod longest-common-subseq :string
-  [a b]
-  (apply str (seq-lcs a b)))
+  [a b opts]
+  (apply str (seq-lcs a b opts)))

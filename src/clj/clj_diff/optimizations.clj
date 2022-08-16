@@ -1,14 +1,37 @@
 (ns clj-diff.optimizations
   "String optimizations for diff algorithms.
-  See http://neil.fraser.name/writing/diff/."
-  (:import clj_diff.FastStringOps))
+  See http://neil.fraser.name/writing/diff/.")
+
+
+(defn commonPrefix ^long [^String a ^String b]
+  (int
+    (let [n (Math/min (.length a) (.length b))]
+      (loop [i 0]
+        (if (< i n)
+          (if-not (= (.charAt a i) (.charAt b i))
+            i
+            (recur (inc i)))
+          n)))))
+
+
+(defn commonSuffix ^long [^String a ^String b]
+  (int
+    (let [la (.length a)
+          lb (.length b)
+          n  (Math/min la lb)]
+      (loop [i 1]
+        (if (<= i n)
+          (if (not= (.charAt a (- la i)) (.charAt b (- lb i)))
+            (dec i)
+            (recur (inc i)))
+          n)))))
 
 (defn common-prefix [^String a ^String b]
-  (let [i (FastStringOps/commonPrefix a b)]
+  (let [i (commonPrefix a b)]
     [i (.substring a i) (.substring b i)]))
 
 (defn common-suffix [^String a ^String b]
-  (let [i (FastStringOps/commonSuffix a b)]
+  (let [i (commonSuffix a b)]
     [i
      (.substring a 0 (- (.length a) i))
      (.substring b 0 (- (.length b) i))]))
