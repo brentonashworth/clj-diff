@@ -89,7 +89,7 @@
 (deftest search-p-band-test
   (let [n (dec (count a1))
         m (dec (count b1))
-        t (fn [p fp] (#'clj-diff.miller/search-p-band a1 b1 n m 2 p fp))]
+        t (fn [p fp] (#'clj-diff.miller/search-p-band a1 b1 n m 2 p fp {}))]
     (is (= (t 0 {})
            {0 2, 1 5, 2 6}))
     (is (= (t 1 {0 2, 1 5, 2 6})
@@ -98,7 +98,7 @@
            {-2 3, -1 7, 0 8, 1 9, 2 12, 3 9, 4 8})))
   (let [n (dec (count a2))
         m (dec (count b2))
-        t (fn [p fp] (#'clj-diff.miller/search-p-band a2 b2 n m 0 p fp))]
+        t (fn [p fp] (#'clj-diff.miller/search-p-band a2 b2 n m 0 p fp {}))]
     (is (= (t 0 {})
            {0 0}))
     (is (= (t 1 {0 0})
@@ -109,14 +109,14 @@
            {-3 0, -2 1, -1 2, 0 3, 1 3, 2 3, 3 3})))
   (let [n (dec (count a3))
         m (dec (count b3))
-        t (fn [p fp] (#'clj-diff.miller/search-p-band a3 b3 n m 0 p fp))]
+        t (fn [p fp] (#'clj-diff.miller/search-p-band a3 b3 n m 0 p fp {}))]
     (is (= (t 0 {})
            {0 2}))
     (is (= (t 1 {0 2})
            {-1 2, 0 6, 1 4})))
   (let [n (dec (count a4))
         m (dec (count b4))
-        t (fn [p fp] (#'clj-diff.miller/search-p-band a4 b4 n m 0 p fp))]
+        t (fn [p fp] (#'clj-diff.miller/search-p-band a4 b4 n m 0 p fp {}))]
     (is (= (t 0 {})
            {0 2}))
     (is (= (t 1 {0 2})
@@ -259,7 +259,7 @@
     (is (nil? (t 3 0 -3)))))
 
 (deftest next-edit-test
-  (let [t (fn [p x k] (#'clj-diff.miller/next-edit a1 b1 a1-graph 2 p x k))]
+  (let [t (fn [p x k] (#'clj-diff.miller/next-edit {} a1 b1 a1-graph 2 p x k))]
     (is (= (t 2 12 2)
            {:edit :insert :x 9 :p 2 :k 3 :d 5}))
     (is (= (t 2 9 3)
@@ -272,7 +272,7 @@
            {:edit :delete :x 5 :p 0 :k 1 :d 1}))
     (is (= (t 0 5 1)
            {:edit :delete :x 2 :p 0 :k 0 :d 0})))
-  (let [t (fn [p x k] (#'clj-diff.miller/next-edit a5 b5 a5-graph 0 p x k))]
+  (let [t (fn [p x k] (#'clj-diff.miller/next-edit {} a5 b5 a5-graph 0 p x k))]
     (is (= (t 2 6 0)
            {:edit :insert :x 6 :p 2 :k 1 :d 3}))
     (is (= (t 2 6 1)
@@ -310,10 +310,10 @@
 
 (deftest edits-test
   (let [t #'clj-diff.miller/edits]
-    (is (= (t a1 b1 2 2 a1-graph) a1-edits))
-    (is (= (t a2 b2 3 0 a2-graph) a2-edits))
-    (is (= (t a3 b3 1 0 a3-graph) a3-edits))
-    (is (= (t a4 b4 4 0 a4-graph) a4-edits))))
+    (is (= (t {} a1 b1 2 2 a1-graph) a1-edits))
+    (is (= (t {} a2 b2 3 0 a2-graph) a2-edits))
+    (is (= (t {} a3 b3 1 0 a3-graph) a3-edits))
+    (is (= (t {} a4 b4 4 0 a4-graph) a4-edits))))
 
 (deftest transpose-test
   (let [t #'clj-diff.miller/transpose]
@@ -330,7 +330,7 @@
            {:+ [[1 \e] [3 \a \b \b]] :- [4 6]}))))
 
 (deftest diff-test
-  (let [t (fn [a b] (core/edit-distance (diff a b)))]
+  (let [t (fn [a b] (core/edit-distance (diff a b {})))]
     (are [a b _ d] (= (t a b) d)
          "acebdabbabed"          "acbdeacbed"        :=> 6
          "acbdeacbed"            "acebdabbabed"      :=> 6
@@ -344,7 +344,7 @@
 
 (deftest roundtrip
   (are [a b]
-       (= b (core/patch a (diff a b)))
+       (= b (core/patch a (diff a b {})))
 
        "aba" "aca"
        "abcabba" "cbabac"

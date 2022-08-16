@@ -1,9 +1,10 @@
 (ns clj-diff.core
   "Diff, patch and related functions for Clojure sequences."
-  (:require [clj-diff [miller :as miller]]))
+  (:require [clj-diff [miller :as miller]]
+            [clojure.core.rrb-vector :as fv]))
 
 (defn diff
-  "Create the edit script for transforming sequance a into sequence b.
+  "Create the edit script for transforming sequence a into sequence b.
   An edit script is a map with keys :+ and :- for additions and deletions.
   Additions are represented as a sequence of vectors. The first item in each
   vector is the index where the rest of the items in the vector are to be
@@ -17,27 +18,34 @@
 
   An index of -1 may appear in additions and is a special case which means to
   add the elements at the beginning of the sequence."
-  [a b]
-  (miller/diff a b))
+  [a b & [opts]]
+  (miller/diff a b opts))
 
 (defn- merge-patch
   [s edit-script delete-symbol]
-  (let [s (vec s)
+  (let [s         (fv/vec s)
         additions (:+ edit-script)
         deletions (:- edit-script)
-        s (reduce (fn [a b]
-                    (assoc a b delete-symbol))
-                  s
-                  deletions)
-        s (reduce (fn [a b]
-                    (let [index (first b)
-                          items (rest b)]
-                      (if (= index -1)
-                        (assoc a 0 (conj (vec items) (get a 0)))
-                        (assoc a index (conj items (get a index))))))
-                  s
-                  additions)]
-    (flatten s)))
+        s         (reduce (fn [a b]
+                            (assoc a b {::delete (get a b)}))
+                    s
+                    deletions)
+
+        s         (reduce (fn [a b]
+                            (let [index (first b)
+                                  items (fv/subvec b 1)]
+                              (if (= index -1)
+                                (assoc a 0 (fv/vector {::insert items} (get a 0)))
+                                (assoc a index (fv/vector (get a index) {::insert items})))))
+                    s
+                    additions)]
+    (mapcat
+      #(if (vector? %)
+         %
+         [%])
+      s)
+
+    #_(apply concat s)))
 
 (defn patch*
   [s edit-script]
@@ -53,25 +61,39 @@
 
 (defmethod patch :default
   [s edit-script]
-  (patch* s edit-script))
+  (into []
+    (mapcat
+      (fn [item]
+        (cond
+          (and (map? item) (contains? item :clj-diff.core/delete)) nil
+          (and (map? item) (contains? item :clj-diff.core/insert)) (:clj-diff.core/insert item)
+          :else (list item))))
+    (patch* s edit-script)))
 
 (defmethod patch String
   [s edit-script]
-  (apply str (patch* s edit-script)))
+  (apply str
+    (mapcat
+      (fn [item]
+        (cond
+          (and (map? item) (contains? item :clj-diff.core/delete)) nil
+          (and (map? item) (contains? item :clj-diff.core/insert)) (:clj-diff.core/insert item)
+          :else (list item)))
+      (patch* s edit-script))))
 
 (defn edit-distance
   "Returns the edit distance between the two passed sequences. May also be
   passed an edit script. The edit distance is the minimum number of insertions
   and deletions required to transform one sequence into another."
-  ([a b]
-     (miller/edit-distance a b))
+  ([a b & [opts]]
+   (miller/edit-distance a b opts))
   ([edit-script]
-     (+ (count (:- edit-script))
-        (reduce + (map #(count (drop 1 %)) (:+ edit-script))))))
+   (+ (count (:- edit-script))
+     (reduce + (map #(count (drop 1 %)) (:+ edit-script))))))
 
 (defn- max-or-zero [coll]
   (if (and (coll? coll)
-           (not (empty? coll)))
+        (not (empty? coll)))
     (apply max coll)
     0))
 
@@ -91,26 +113,38 @@
   distance but in same cases it may be larger. The reason for this is that
   there may be multiple paths through an edit graph with the same edit
   distance but with differing Levenshtein distance. A future improvement to
-  the diff algorithm whould be to find all paths and prefer the one with the
+  the diff algorithm would be to find all paths and prefer the one with the
   minimum Levenshtein distance."
   ([a b]
-     (levenshtein-distance (diff a b)))
+   (levenshtein-distance (diff a b)))
   ([edit-script]
-     (let [additions (map #(let [index (first %)
+   (let [additions   (map #(let [index (first %)
                                  items (rest %)]
                              (apply vector index (repeat (count items) :a)))
-                          (:+ edit-script))
-           max-index (max (max-or-zero (map first additions))
-                          (max-or-zero (:- edit-script)))
-           v (vec (repeat max-index :e))
-           patched (merge-patch v (merge edit-script {:+ additions}) :d)
-           edit-groups (filter #(not= :e (first %))
-                               (partition-by #(if (= % :e) :e :edit)
-                                             patched))]
-       (reduce + (map (fn [group]
-                        (max (count (filter #(= % :a) group))
-                             (count (filter #(= % :d) group))))
-                      edit-groups)))))
+                       (:+ edit-script))
+         max-index   (max (max-or-zero (map first additions))
+                       (max-or-zero (:- edit-script)))
+         v           (vec (repeat max-index :e))
+         patched     (merge-patch v (merge edit-script {:+ additions}) :d)
+         edit-groups (filter #(not= :e (first %))
+                       (partition-by #(if (= % :e) :e :edit)
+                         patched))]
+     (reduce + (map (fn [group]
+                      (max
+                        (transduce
+                          (comp
+                            (mapcat :clj-diff.core/insert)
+                            (filter #{:a})
+                            (map (constantly 1)))
+                          +
+                          group)
+                        (transduce
+                          (comp
+                            (filter #(contains? % :clj-diff.core/delete))
+                            (map (constantly 1)))
+                          +
+                          group)))
+                 edit-groups)))))
 
-(defn longest-common-subseq [a b]
-  (miller/longest-common-subseq a b))
+(defn longest-common-subseq [a b & [opts]]
+  (miller/longest-common-subseq a b opts))
