@@ -88,12 +88,12 @@
   ([a b & [opts]]
    (miller/edit-distance a b opts))
   ([edit-script]
-   (+ (count (:- edit-script))
-     (reduce + (map #(count (drop 1 %)) (:+ edit-script))))))
+     (+ (count (:- edit-script))
+        (reduce + (map #(count (drop 1 %)) (:+ edit-script))))))
 
 (defn- max-or-zero [coll]
   (if (and (coll? coll)
-        (not (empty? coll)))
+           (not (empty? coll)))
     (apply max coll)
     0))
 
