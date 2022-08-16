@@ -49,11 +49,12 @@
   in the map fp. Returns an updated fp map for p. a and b are the two
   sequences and n and m are their lengths respectively. delta is the
   diagonal of the sink and is equal to n - m."
-  [a b n m delta p fp opts]
-  (persistent! (reduce (fn [fp next-k]
-                         (assoc! fp next-k (snake a b n m next-k fp opts)))
-                       (transient fp)
-                       (p-band-diagonals p delta))))
+  [a b n m delta p fp & [opts]]
+  (let [opts (or opts {})]
+    (persistent! (reduce (fn [fp next-k]
+                           (assoc! fp next-k (snake a b n m next-k fp opts)))
+                   (transient fp)
+                   (p-band-diagonals p delta)))))
 
 (defn ses
   "Find the size of the shortest edit script (ses). Returns a 3-tuple of the
@@ -114,15 +115,15 @@
   (when (> (- x k) 0)
     (let [up-k (inc k)
           up-p (p-value-up delta p k)
-          x*   (-> graph
-                   (fast/val-at up-p {})
-                   (fast/val-at up-k -1))]
+          x* (-> graph
+                 (get up-p {})
+                 (get up-k -1))]
       (when (and (>= x* 0) (= x x*))
         {:edit :insert
-         :x    x*
-         :p    up-p
-         :k    up-k
-         :d    (edit-dist delta up-p up-k)}))))
+         :x x*
+         :p up-p
+         :k up-k
+         :d (edit-dist delta up-p up-k)}))))
 
 (defn- look-left
   "Get information about the vertex to the left of the one at x on k. If this
@@ -131,15 +132,15 @@
   (when (> x 0)
     (let [left-k (dec k)
           left-p (p-value-left delta p k)
-          x*     (-> graph
-                     (fast/val-at left-p {})
-                     (fast/val-at left-k -1))]
+          x* (-> graph
+                 (get left-p {})
+                 (get left-k -1))]
       (when (and (>= x* 0) (= (dec x) x*))
         {:edit :delete
-         :x    x*
-         :p    left-p
-         :k    left-k
-         :d    (edit-dist delta left-p left-k)}))))
+         :x x*
+         :p left-p
+         :k left-k
+         :d (edit-dist delta left-p left-k)}))))
 
 (defn- backtrack-snake
   "Find the x value at the head of the longest snake ending at (x, y)."
@@ -160,8 +161,8 @@
   edit distance by 1."
   [opts a b graph delta p x k]
   {:post [(= (dec (edit-dist delta p k)) (:d %))]}
-  (let [d      (edit-dist delta p k)
-        head-x (backtrack-snake a b x (- x k) opts)]
+  (let [d (edit-dist delta p k)
+        head-x (backtrack-snake a b x (- x k))]
     (loop [head-x head-x]
       (let [move (first (filter #(and (not (= ::sentinel %)) ;; <<<===
                                       (= (:d %) (dec d)))
@@ -177,8 +178,8 @@
   [opts a b p delta graph]
   (let [next-fn (partial next-edit opts a b graph delta)]
     (loop [edits '()
-           prev  {:x (count a) :p p :k delta
-                  :d (edit-dist delta p delta)}]
+           prev {:x (count a) :p p :k delta
+                 :d (edit-dist delta p delta)}]
       (if (= (:d prev) 0)
         edits
         (let [next (next-fn (:p prev) (:x prev) (:k prev))]
@@ -198,8 +199,8 @@
   [b edits f]
   (reduce (fn [script edit]
             (let [{:keys [edit x k]} (f edit)
-                  y           (inc (- x k))
-                  insertions  (:+ script)
+                  y (inc (- x k))
+                  insertions (:+ script)
                   last-insert (last insertions)]
               (if (= edit :delete)
                 (fast/fast-assoc script :- (conj (:- script) x))
@@ -230,12 +231,12 @@
 (defn string-dispatch [a b & [_]]
   (when (and (string? a) (string? b)) :string))
 
-(defmulti ^{:arglists '([a b opts])} diff
-          "Create an edit script that may be used to transform a into b. See doc string
-          for clj-diff.core/diff. This function will ensure that diff* is called with
-          arguments a and b where a >= b. If the passed values of a and b need to be
-          swapped then the resulting path with will transposed."
-          string-dispatch)
+(defmulti ^{:arglists '([a b])} diff
+  "Create an edit script that may be used to transform a into b. See doc string
+  for clj-diff.core/diff. This function will ensure that diff* is called with
+  arguments a and b where a >= b. If the passed values of a and b need to be
+  swapped then the resulting path with will transposed."
+  string-dispatch)
 
 (defmethod diff :default
   [a b opts]

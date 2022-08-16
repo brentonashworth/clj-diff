@@ -58,7 +58,7 @@
 
 (defn- half-match* [^String long ^String short ^Integer i]
   (let [target (.substring long i (+ i (quot (count long) 4)))]
-    (loop [j      (.indexOf short target 0)
+    (loop [j (.indexOf short target 0)
            result []]
       (if (= j -1)
         (if (>= (count (or (first result) ""))
@@ -69,7 +69,7 @@
                                                   (.substring short j)))
               suffix-length (first (common-suffix (.substring long 0 i)
                                                   (.substring short 0 j)))
-              common        (or (first result) "")]
+              common (or (first result) "")]
           (recur (.indexOf short target (inc j))
                  (if (< (count common) (+ prefix-length suffix-length))
                    [(str (.substring short (- j suffix-length) j)
@@ -89,18 +89,18 @@
   [^String a ^String b]
   (let [[short long] (if (> (count a) (count b)) [b a] [a b])
         short-count (count short)
-        long-count  (count long)]
+        long-count (count long)]
     (if (or (< long-count 4)
             (< (* short-count 2) long-count))
       nil
       (let [hm-second-q (half-match* long short (quot (+ long-count 3) 4))
-            hm-third-q  (half-match* long short (quot (+ long-count 1) 2))
-            half-match  (cond (and hm-second-q hm-third-q)
-                              (if (> (count (first hm-second-q))
-                                     (count (first hm-third-q)))
-                                hm-second-q
-                                hm-third-q)
-                              :else (or hm-second-q hm-third-q))]
+            hm-third-q (half-match* long short (quot (+ long-count 1) 2))
+            half-match (cond (and hm-second-q hm-third-q)
+                             (if (> (count (first hm-second-q))
+                                    (count (first hm-third-q)))
+                               hm-second-q
+                               hm-third-q)
+                             :else (or hm-second-q hm-third-q))]
         (cond (nil? half-match) nil
               (= a long) half-match
               :else [(get half-match 0)
@@ -131,13 +131,13 @@
               :else (if-let [diffs (short-within-long a b ca cb)]
                       diffs
                       (if-let [half-match (half-match a b)]
-                        (let [common   (get half-match 0)
+                        (let [common (get half-match 0)
                               a-prefix (get half-match 1)
                               a-suffix (get half-match 2)
                               b-prefix (get half-match 3)
                               b-suffix (get half-match 4)
-                              diff-a   (diff a-prefix b-prefix f)
-                              diff-b   (diff a-suffix b-suffix f)]
+                              diff-a (diff a-prefix b-prefix f)
+                              diff-b (diff a-suffix b-suffix f)]
                           (merge-with concat
                                       diff-a
                                       (offset-diffs diff-b

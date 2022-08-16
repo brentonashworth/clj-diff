@@ -89,7 +89,7 @@
 (deftest search-p-band-test
   (let [n (dec (count a1))
         m (dec (count b1))
-        t (fn [p fp] (#'clj-diff.miller/search-p-band a1 b1 n m 2 p fp {}))]
+        t (fn [p fp] (#'clj-diff.miller/search-p-band a1 b1 n m 2 p fp))]
     (is (= (t 0 {})
            {0 2, 1 5, 2 6}))
     (is (= (t 1 {0 2, 1 5, 2 6})
@@ -98,7 +98,7 @@
            {-2 3, -1 7, 0 8, 1 9, 2 12, 3 9, 4 8})))
   (let [n (dec (count a2))
         m (dec (count b2))
-        t (fn [p fp] (#'clj-diff.miller/search-p-band a2 b2 n m 0 p fp {}))]
+        t (fn [p fp] (#'clj-diff.miller/search-p-band a2 b2 n m 0 p fp))]
     (is (= (t 0 {})
            {0 0}))
     (is (= (t 1 {0 0})
@@ -109,14 +109,14 @@
            {-3 0, -2 1, -1 2, 0 3, 1 3, 2 3, 3 3})))
   (let [n (dec (count a3))
         m (dec (count b3))
-        t (fn [p fp] (#'clj-diff.miller/search-p-band a3 b3 n m 0 p fp {}))]
+        t (fn [p fp] (#'clj-diff.miller/search-p-band a3 b3 n m 0 p fp))]
     (is (= (t 0 {})
            {0 2}))
     (is (= (t 1 {0 2})
            {-1 2, 0 6, 1 4})))
   (let [n (dec (count a4))
         m (dec (count b4))
-        t (fn [p fp] (#'clj-diff.miller/search-p-band a4 b4 n m 0 p fp {}))]
+        t (fn [p fp] (#'clj-diff.miller/search-p-band a4 b4 n m 0 p fp))]
     (is (= (t 0 {})
            {0 2}))
     (is (= (t 1 {0 2})
