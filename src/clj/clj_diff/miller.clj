@@ -76,7 +76,7 @@
             fp {}]
 
        (cond
-         (and limit-p
+         (and (number? limit-p)
            (> p limit-p))
          #_=> [-1 delta fp]
 
