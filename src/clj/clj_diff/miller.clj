@@ -224,16 +224,20 @@
   (map #(vec (cons ::sentinel %)) more))
 
 (defn order->ses
-  [a b opts]
-  (let [[a* b*] (if (> (count b) (count a)) [b a] [a b])]
-    [(ses a* b* opts) a* b*]))
+  ([a b]
+   (order->ses a b))
+  ([a b opts]
+   (let [[a* b*] (if (> (count b) (count a)) [b a] [a b])]
+     [(ses a* b* opts) a* b*])))
 
 (defn seq-diff
-  [opts a b]
-  (let [[a b] (vectorize a b)
-        [es a* b*] (order->ses a b opts)
-        edits (apply edits opts a* b* es)]
-    (edits->script b edits (if (= a* a) identity transpose))))
+  ([a b]
+   (seq-diff a b {}))
+  ([a b opts]
+   (let [[a b] (vectorize a b)
+         [es a* b*] (order->ses a b opts)
+         edits (apply edits opts a* b* es)]
+     (edits->script b edits (if (= a* a) identity transpose)))))
 
 (defn string-dispatch [a b & _]
   (when (and (string? a) (string? b)) :string))
@@ -246,20 +250,26 @@
   string-dispatch)
 
 (defmethod diff :default
-  [a b opts]
-  (seq-diff opts a b))
+  ([a b]
+   (diff a b {}))
+  ([a b opts]
+   (seq-diff a b opts)))
 
 (defmethod diff :string
-  [a b opts]
-  (opt/diff a b (partial seq-diff opts)))
+  ([a b]
+   (diff a b {}))
+  ([a b opts]
+   (opt/diff a b (fn [a b] (seq-diff a b opts)))))
 
 (defn seq-edit-dist
-  [a b opts]
-  (let [[a b] (vectorize a b)
-        [[p & more] a* b*] (order->ses a b opts)]
-    (if (neg? p)
-      p
-      (+ (* 2 p) (- (count a*) (count b*))))))
+  ([a b]
+   (seq-edit-dist a b {}))
+  ([a b opts]
+   (let [[a b] (vectorize a b)
+         [[p & more] a* b*] (order->ses a b opts)]
+     (if (neg? p)
+       p
+       (+ (* 2 p) (- (count a*) (count b*)))))))
 
 (defmulti edit-distance string-dispatch)
 
@@ -274,21 +284,27 @@
   (seq-edit-dist a b opts))
 
 (defn seq-lcs
-  [a b opts]
-  (let [diff      (seq-diff opts a b)
-        deletions (:- diff)]
-    (filter #(not= % ::d)
-            (reduce (fn [coll next]
-                      (fast/fast-assoc coll next ::d))
-                    (vec (seq a))
-                    deletions))))
+  ([a b]
+   (seq-lcs a b {}))
+  ([a b opts]
+   (let [diff      (seq-diff a b opts)
+         deletions (:- diff)]
+     (filter #(not= % ::d)
+       (reduce (fn [coll next]
+                 (fast/fast-assoc coll next ::d))
+         (vec (seq a))
+         deletions)))))
 
 (defmulti longest-common-subseq string-dispatch)
 
 (defmethod longest-common-subseq :default
-  [a b opts]
-  (seq-lcs a b opts))
+  ([a b]
+   (longest-common-subseq a b {}))
+  ([a b opts]
+   (seq-lcs a b opts)))
 
 (defmethod longest-common-subseq :string
-  [a b opts]
-  (apply str (seq-lcs a b opts)))
+  ([a b]
+   (longest-common-subseq a b {}))
+  ([a b opts]
+   (apply str (seq-lcs a b opts))))
