@@ -19,22 +19,23 @@
   "Starting at the farthest point on diagonal k, return the x value of the
   point at the end of the longest snake on this diagonal. A snake is a
   sequence of diagonal moves connecting match points on the edit graph."
-  [a b n m k fp & [opts]]
-  {:pre [(and (vector? a) (vector? b))]}
-  (let [opts (or opts {})
-        compare (or (:compare opts)
-                    (fn [a b]
-                      (or
-                        (and (string? a) (string? b)
-                             (.equals ^String a ^String b))
-                        (= a b))))
-        x       (next-x k fp)
-        y       (- x k)]
-    (loop [x x
-           y y]
-      (if (and (< x n) (< y m) (compare (fast/val-at a (inc x)) (fast/val-at b (inc y))))
-        (recur (inc x) (inc y))
-        x))))
+  ([a b n m k fp]
+   (snake a b n m k fp {}))
+  ([a b n m k fp opts]
+   {:pre [(and (vector? a) (vector? b))]}
+   (let [compare (or (:compare opts)
+                   (fn [a b]
+                     (or
+                       (and (string? a) (string? b)
+                         (.equals ^String a ^String b))
+                       (= a b))))
+         x       (next-x k fp)
+         y       (- x k)]
+     (loop [x x
+            y y]
+       (if (and (< x n) (< y m) (compare (fast/val-at a (inc x)) (fast/val-at b (inc y))))
+         (recur (inc x) (inc y))
+         x)))))
 
 (defn- p-band-diagonals
   "Given a p value and a delta, return all diagonals in this p-band."
@@ -49,41 +50,44 @@
   in the map fp. Returns an updated fp map for p. a and b are the two
   sequences and n and m are their lengths respectively. delta is the
   diagonal of the sink and is equal to n - m."
-  [a b n m delta p fp & [opts]]
-  (let [opts (or opts {})]
-    (persistent! (reduce (fn [fp next-k]
-                           (assoc! fp next-k (snake a b n m next-k fp opts)))
-                   (transient fp)
-                   (p-band-diagonals p delta)))))
+  ([a b n m delta p fp]
+   (search-p-band a b n m delta p fp {}))
+  ([a b n m delta p fp opts]
+   (let [opts (or opts {})]
+     (persistent! (reduce (fn [fp next-k]
+                            (assoc! fp next-k (snake a b n m next-k fp opts)))
+                    (transient fp)
+                    (p-band-diagonals p delta))))))
 
 (defn ses
   "Find the size of the shortest edit script (ses). Returns a 3-tuple of the
   size of the ses, the delta value (which is the diagonal of the sink)
   and the fp map. The optimal path from source to sink can be constructed from
   this information."
-  [a b & [opts]]
-  {:pre [(>= (count a) (count b))]}
-  (let [opts (or opts {})
-        limit-p (:limit-p opts)
-        n       (dec (count a))
-        m       (dec (count b))
-        delta   (- n m)]
-    (loop [p  0
-           fp {}]
+  ([a b]
+   (ses a b {}))
+  ([a b opts]
+   {:pre [(>= (count a) (count b))]}
+   (let [limit-p (:limit-p opts)
+         n       (dec (count a))
+         m       (dec (count b))
+         delta   (- n m)]
+     (loop [p  0
+            fp {}]
 
-      (cond
-        (and limit-p
-             (> p limit-p))
-        #_=> [-1 delta fp]
+       (cond
+         (and limit-p
+           (> p limit-p))
+         #_=> [-1 delta fp]
 
-        (= (-> (fast/val-at fp (dec p) {})
-               (fast/val-at delta))
+         (= (-> (fast/val-at fp (dec p) {})
+              (fast/val-at delta))
            n)
-        #_=> [(dec p) delta fp]
+         #_=> [(dec p) delta fp]
 
-        :else #_=> (recur (inc p)
-                          (fast/fast-assoc fp p
-                                           (search-p-band a b n m delta p (fast/val-at fp (dec p) {}) opts)))))))
+         :else #_=> (recur (inc p)
+                      (fast/fast-assoc fp p
+                        (search-p-band a b n m delta p (fast/val-at fp (dec p) {}) opts))))))))
 
 ;;
 ;; Build the edit script from the map of farthest endpoints.
@@ -144,15 +148,17 @@
 
 (defn- backtrack-snake
   "Find the x value at the head of the longest snake ending at (x, y)."
-  [a b x y & [opts]]
-  {:pre [(and (>= x 0) (>= y 0))]}
-  (let [opts    (or opts {})
-        compare (or (:compare opts) =)]
-    (loop [x x
-           y y]
-      (if (or (= x y 0) (not (compare (fast/val-at a x) (fast/val-at b y))))
-        x
-        (recur (dec x) (dec y))))))
+  ([a b x y]
+   (backtrack-snake a b x y {}))
+  ([a b x y opts]
+   {:pre [(and (>= x 0) (>= y 0))]}
+   (let [opts    (or opts {})
+         compare (or (:compare opts) =)]
+     (loop [x x
+            y y]
+       (if (or (= x y 0) (not (compare (fast/val-at a x) (fast/val-at b y))))
+         x
+         (recur (dec x) (dec y)))))))
 
 ;; See the paper for an example of how there are multiple shortest
 ;; paths through an edit graph.
@@ -229,7 +235,7 @@
         edits (apply edits opts a* b* es)]
     (edits->script b edits (if (= a* a) identity transpose))))
 
-(defn string-dispatch [a b & [_]]
+(defn string-dispatch [a b & _]
   (when (and (string? a) (string? b)) :string))
 
 (defmulti ^{:arglists '([a b])} diff

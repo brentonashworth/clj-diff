@@ -18,8 +18,10 @@
 
   An index of -1 may appear in additions and is a special case which means to
   add the elements at the beginning of the sequence."
-  [a b & [opts]]
-  (miller/diff a b opts))
+  ([a b]
+   (diff a b {}))
+  ([a b opts]
+   (miller/diff a b opts)))
 
 (defn- merge-patch
   [s edit-script delete-symbol]
@@ -83,7 +85,9 @@
   "Returns the edit distance between the two passed sequences. May also be
   passed an edit script. The edit distance is the minimum number of insertions
   and deletions required to transform one sequence into another."
-  ([a b & [opts]]
+  ([a b]
+   (miller/edit-distance a b {}))
+  ([a b opts]
    (miller/edit-distance a b opts))
   ([edit-script]
      (+ (count (:- edit-script))
@@ -144,5 +148,8 @@
                           group)))
                  edit-groups)))))
 
-(defn longest-common-subseq [a b & [opts]]
-  (miller/longest-common-subseq a b opts))
+(defn longest-common-subseq
+  ([a b]
+   (longest-common-subseq a b {}))
+  ([a b opts]
+   (miller/longest-common-subseq a b opts)))
