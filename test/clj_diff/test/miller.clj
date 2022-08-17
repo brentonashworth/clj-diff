@@ -259,7 +259,7 @@
     (is (nil? (t 3 0 -3)))))
 
 (deftest next-edit-test
-  (let [t (fn [p x k] (#'clj-diff.miller/next-edit {} a1 b1 a1-graph 2 p x k))]
+  (let [t (fn [p x k] (#'clj-diff.miller/next-edit a1 b1 a1-graph 2 p x k))]
     (is (= (t 2 12 2)
            {:edit :insert :x 9 :p 2 :k 3 :d 5}))
     (is (= (t 2 9 3)
@@ -272,7 +272,7 @@
            {:edit :delete :x 5 :p 0 :k 1 :d 1}))
     (is (= (t 0 5 1)
            {:edit :delete :x 2 :p 0 :k 0 :d 0})))
-  (let [t (fn [p x k] (#'clj-diff.miller/next-edit {} a5 b5 a5-graph 0 p x k))]
+  (let [t (fn [p x k] (#'clj-diff.miller/next-edit a5 b5 a5-graph 0 p x k))]
     (is (= (t 2 6 0)
            {:edit :insert :x 6 :p 2 :k 1 :d 3}))
     (is (= (t 2 6 1)

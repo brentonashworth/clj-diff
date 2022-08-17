@@ -166,7 +166,7 @@
 (defn- next-edit
   "Find the next move through the edit graph which will decrease the
   edit distance by 1."
-  [opts a b graph delta p x k]
+  [a b graph delta p x k]
   {:post [(= (dec (edit-dist delta p k)) (:d %))]}
   (let [d (edit-dist delta p k)
         head-x (backtrack-snake a b x (- x k))]
@@ -183,7 +183,7 @@
   "Calculate the sequence of edits from the map of farthest reaching end
   points."
   [opts a b p delta graph]
-  (let [next-fn (partial next-edit opts a b graph delta)]
+  (let [next-fn (partial next-edit a b graph delta)]
     (loop [edits '()
            prev {:x (count a) :p p :k delta
                  :d (edit-dist delta p delta)}]
