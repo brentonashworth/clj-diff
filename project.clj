@@ -1,4 +1,4 @@
-(defproject tech.droit/clj-diff "1.1.0"
+(defproject tech.droit/clj-diff "2.0.0-experimental"
   :description "Sequential diff in Clojure."
   :url "http://github.com/droitfintech/clj-diff"
   :license {:name "Eclipse Public License - v 1.0"
