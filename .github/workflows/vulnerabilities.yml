@@ -1,0 +1,49 @@
+name: Vulnerability Scan
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+
+# https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency
+# 1. Cancel pending workflows for the branch when a new commit is pushed
+# 2. Cancel in-progress workflows for non-trunk branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+env:
+  LEIN_USERNAME: ${{ secrets.LEIN_USERNAME }}
+  LEIN_PASSWORD: ${{ secrets.LEIN_PASSWORD }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  SLACK_CHANNEL: dev-standards-common-bots
+  SHOULD_DEPLOY: >-
+    ${{ github.ref == 'refs/heads/master' }}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    container:
+      image: clojure:openjdk-8-lein-2.9.8
+    steps:
+      - uses: actions/checkout@v2
+      - name: Scan
+        # Using the explicit classpath form rather than the plugin as there is
+        # interference between the project classpath and the plugin classpath
+        run: |
+          export PROJECT_CLASSPATH="$(lein with-profile droit-parent-core classpath)"
+          lein with-profile vulnerabilities run -m nvd.task.check "" \
+            "$PROJECT_CLASSPATH"
+      - name: Notify
+        uses: 8398a7/action-slack@v3
+        # We need always to ensure it runs regardless of the previous job's status,
+        # even if we have a separate condition, hence `always()`
+        if: always() && job.status != 'success' && env.SHOULD_DEPLOY == 'true'
+        with:
+          channel: ${{ env.SLACK_CHANNEL }}
+          status: ${{ job.status }}
+          icon_emoji: ':nvd:'
+          text: ':facepalm: Vulnerabilities scan failed :facepalm:'
+          author_name: ''
+          username: The Police
+          fields: repo,commit,workflow

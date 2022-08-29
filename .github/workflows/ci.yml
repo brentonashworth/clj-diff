@@ -1,0 +1,68 @@
+name: Build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+
+# https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency
+# 1. Cancel pending workflows for the branch when a new commit is pushed
+# 2. Cancel in-progress workflows for non-trunk branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+env:
+  LEIN_USERNAME: ${{ secrets.LEIN_USERNAME }}
+  LEIN_PASSWORD: ${{ secrets.LEIN_PASSWORD }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  SLACK_CHANNEL: dev-standards-common-bots
+  SHOULD_DEPLOY: >-
+    ${{ github.ref == 'refs/heads/master' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/droitfintech/gha-image-multijdk:7bc84c3
+      credentials:
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.DROIT_GITHUB_PACKAGES_TOKEN }}
+
+    outputs:
+      image: ${{ steps.build-push-action.outputs.image }}
+
+    steps:
+      - name: Notify
+        if: always() && env.SHOULD_DEPLOY == 'true'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'custom'
+          fields: repo,commit,job
+          custom_payload: |
+            {
+              channel: "${{ env.SLACK_CHANNEL }}",
+              attachments: [{
+                color: "#f2c744",
+                text: `:hammer_and_wrench: Starting ${process.env.AS_REPO} ${process.env.AS_JOB}[${process.env.AS_COMMIT}]`,
+              }]
+            }
+      - uses: actions/checkout@v2
+      - name: Test and build
+        run: |
+          lein do clean, check, lint, test, install
+      - name: Deploy
+        if: env.SHOULD_DEPLOY == 'true'
+        run: |
+          lein deploy
+      - name: Notify
+        # We need always to ensure it runs regardless of the previous job's status,
+        # even if we have a separate condition, hence `always()`
+        if: always() && env.SHOULD_DEPLOY == 'true'
+        uses: 8398a7/action-slack@v3
+        with:
+          channel: ${{ env.SLACK_CHANNEL }}
+          author_name: ''
+          status: ${{ job.status }}
+          fields: message,commit,author,took,repo,job
+
