@@ -166,10 +166,12 @@
 (defn- next-edit
   "Find the next move through the edit graph which will decrease the
   edit distance by 1."
-  [a b graph delta p x k]
+  ([a b graph delta p x k]
+   (next-edit a b graph delta p x k {}))
+  ([a b graph delta p x k opts]
   {:post [(= (dec (edit-dist delta p k)) (:d %))]}
   (let [d (edit-dist delta p k)
-        head-x (backtrack-snake a b x (- x k))]
+         head-x (backtrack-snake a b x (- x k) opts)]
     (loop [head-x head-x]
       (let [move (first (filter #(and (not (= ::sentinel %)) ;; <<<===
                                       (= (:d %) (dec d)))
@@ -177,20 +179,22 @@
                                      [look-left look-up])))]
         (if (and (< head-x x) (nil? move))
           (recur (inc head-x))
-          move)))))
+           move))))))
 
 (defn- edits
-  "Calculate the sequence of edits from the map of farthest reaching end
+  "Calculate the sequence of edits from the map of the farthest reaching end
   points."
-  [a b p delta graph]
-  (let [next-fn (partial next-edit a b graph delta)]
+  ([a b p delta graph]
+   (edits {} a b p delta graph))
+  ([opts a b p delta graph]
+   (let [next-fn (fn [p x k] (next-edit a b graph delta p x k opts))]
     (loop [edits '()
            prev {:x (count a) :p p :k delta
                  :d (edit-dist delta p delta)}]
       (if (= (:d prev) 0)
         edits
         (let [next (next-fn (:p prev) (:x prev) (:k prev))]
-          (recur (conj edits next) next))))))
+           (recur (conj edits next) next)))))))
 
 (defn- transpose
   "If a is shorter than b, then the diff is calculated from b to a and this
@@ -236,7 +240,7 @@
   ([a b opts]
    (let [[a b] (vectorize a b)
          [es a* b*] (order->ses a b opts)
-         edits (apply edits a* b* es)]
+         edits (apply edits opts a* b* es)]
      (edits->script b edits (if (= a* a) identity transpose)))))
 
 (defn string-dispatch
